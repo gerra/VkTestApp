@@ -57,21 +57,18 @@ public class StickerPickerDialogFragment extends BottomSheetDialogFragment
         Toolbar toolbar = stickerPickerView.findViewById(R.id.toolbar);
         toolbar.setTitle(R.string.stickers_title);
 
+        if (mStickerPickerPresenter == null) {
+            mStickerPickerPresenter = new StickerPickerPresenterImpl();
+        }
+        mStickerPickerPresenter.attachView(this);
+        mStickerPickerPresenter.loadStickers(getContext());
+
         return stickerPickerView;
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
-
-        mStickerPickerPresenter = new StickerPickerPresenterImpl();
-        mStickerPickerPresenter.attachView(this);
-        mStickerPickerPresenter.loadStickers(getContext());
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
+    public void onDestroyView() {
+        super.onDestroyView();
 
         mStickerPickerPresenter.detachView();
     }

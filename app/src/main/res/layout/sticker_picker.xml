@@ -12,7 +12,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:textAlignment="viewStart" />
+            android:textAlignment="viewStart"/>
     </android.support.design.widget.AppBarLayout>
 
     <android.support.v7.widget.RecyclerView
@@ -20,8 +20,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginLeft="12dp"
-        android:layout_marginRight="12dp">
-
-    </android.support.v7.widget.RecyclerView>
+        android:layout_marginRight="12dp"/>
 
 </LinearLayout>

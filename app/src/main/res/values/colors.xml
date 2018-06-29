@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#FFFFFF</color>
-    <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#303F9F</color>
+    <color name="color_primary">#fff</color>
+    <color name="color_primary_dark">#303f9f</color>
+    <color name="color_accent">#303f9f</color>
 
-    <color name="toolbarDivider">#1F000000</color>
+    <color name="divider">#1f000000</color>
+
+    <color name="save_button_normal_color">#528bcc</color>
+    <color name="save_button_pressed_color">#2868b0</color>
+
+    <color name="none_background">#ebebeb</color>
+    <color name="add_background">#3d528bcc</color>
+    <color name="active_background_outside_border">#528bcc</color>
+    <color name="active_background_inside_border">#fff</color>
 </resources>

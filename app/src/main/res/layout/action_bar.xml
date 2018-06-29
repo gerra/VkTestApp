@@ -19,6 +19,8 @@
         android:layout_weight="1"
         android:gravity="center"
         android:text="@string/new_post_title"
+        android:textColor="#000"
+        android:textSize="18sp"
         tools:text="Новая запись"/>
 
     <ImageButton

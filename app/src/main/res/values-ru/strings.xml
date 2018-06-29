@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">VkTestApp</string>
+
+    <string name="new_post_title">Новая запись</string>
+    <string name="stickers_title">Стикеры</string>
+    <string name="save_story">Сохранить</string>
+</resources>

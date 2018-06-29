@@ -1,5 +1,28 @@
 <resources>
-    <style name="ActionBar" parent="@style/Widget.AppCompat.ActionBar.Solid">
-        <item name="android:actionBarDivider">@color/toolbarDivider</item>
+    <style name="ActionBar" parent="@style/Widget.AppCompat.Light.ActionBar.Solid">
+        <item name="android:actionBarDivider">@color/divider</item>
+        <item name="android:titleTextStyle">@style/RobotoTextViewStyle</item>
+    </style>
+    
+    <style name="RobotoButtonStyle" parent="@style/Widget.AppCompat.Button">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="RobotoTextViewStyle" parent="android:Widget.TextView">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="SaveButtonStyle" parent="RobotoButtonStyle">
+        <item name="android:background">@drawable/save_button_background</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">#FFF</item>
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:paddingRight">16dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:textAllCaps">true</item>
     </style>
 </resources>

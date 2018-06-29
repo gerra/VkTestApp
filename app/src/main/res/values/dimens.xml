@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="toolbar_divider_height">0.5dp</dimen>
+    <dimen name="vertical_space_stickers_list">8dp</dimen>
+    <dimen name="horizontal_space_stickers_list">8dp</dimen>
+    <dimen name="action_bar_height">48dp</dimen>
+    <dimen name="action_bar_content_padding">16dp</dimen>
+</resources>

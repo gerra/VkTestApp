@@ -1,21 +1,25 @@
 package com.german.vktestapp;
 
-import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.BottomSheetDialogFragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 
 import java.util.List;
 
 public class StickerPickerDialogFragment extends BottomSheetDialogFragment
         implements StickerPickerView {
+    private static final int COLUMNS_IN_STICKERS_LIST_COUNT = 4;
+
     private StickerPickerPresenter mStickerPickerPresenter;
     private StickersAdapter mStickersAdapter;
     private StickerPickListener mStickerPickListener;
@@ -25,40 +29,45 @@ public class StickerPickerDialogFragment extends BottomSheetDialogFragment
         super.onAttach(context);
 
         if (context instanceof StickerPickListener) {
-            mStickerPickerPresenter = (StickerPickerPresenter) context;
+            mStickerPickListener = (StickerPickListener) context;
         } else {
             throw new ClassCastException("Fragment should be attached to StickerPickerPresenter");
         }
     }
 
-    @NonNull
+    @Nullable
     @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
-        Dialog dialog = new BottomSheetDialog(getContext(), R.style.StickerPickerDialog);
-
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View stickerPickerView = View.inflate(getContext(), R.layout.sticker_picker, null);
-        RecyclerView stickersListView = stickerPickerView.findViewById(R.id.stickers_list);
-        stickersListView.setLayoutManager(new GridLayoutManager(getContext(), 4));
 
         mStickersAdapter = new StickersAdapter(new StickerPickListenerWrapper(mStickerPickListener));
-        stickersListView.setAdapter(mStickersAdapter);
 
-        return dialog;
+        RecyclerView stickersListView = stickerPickerView.findViewById(R.id.stickers_list);
+        stickersListView.setAdapter(mStickersAdapter);
+        stickersListView.setLayoutManager(new GridLayoutManager(getContext(), COLUMNS_IN_STICKERS_LIST_COUNT));
+        int horizontalSpace = getResources().getDimensionPixelSize(R.dimen.horizontal_space_stickers_list);
+        int verticalSpace = getResources().getDimensionPixelSize(R.dimen.vertical_space_stickers_list);
+        StickersSpaceDecorator stickersSpaceDecorator = new StickersSpaceDecorator(COLUMNS_IN_STICKERS_LIST_COUNT, horizontalSpace, verticalSpace);
+        stickersListView.addItemDecoration(stickersSpaceDecorator);
+
+        Toolbar toolbar = stickerPickerView.findViewById(R.id.toolbar);
+        toolbar.setTitle(R.string.stickers_title);
+
+        return stickerPickerView;
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onStart() {
+        super.onStart();
 
         mStickerPickerPresenter = new StickerPickerPresenterImpl();
         mStickerPickerPresenter.attachView(this);
-
         mStickerPickerPresenter.loadStickers(getContext());
     }
 
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
+    public void onStop() {
+        super.onStop();
 
         mStickerPickerPresenter.detachView();
     }
@@ -90,6 +99,32 @@ public class StickerPickerDialogFragment extends BottomSheetDialogFragment
             }
 
             dismiss();
+        }
+    }
+
+    private static class StickersSpaceDecorator extends RecyclerView.ItemDecoration {
+        private final int mColumnsCount;
+        private final int mHorizontalSpace;
+        private final int mVerticalSpace;
+
+        public StickersSpaceDecorator(int columnsCount, int horizontalSpace, int verticalSpace) {
+            mColumnsCount = columnsCount;
+            mHorizontalSpace = horizontalSpace;
+            mVerticalSpace = verticalSpace;
+        }
+
+        @Override
+        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+            int position = parent.getChildAdapterPosition(view);
+            int column = position % mColumnsCount;
+
+            if (column < mColumnsCount - 1) {
+                outRect.right += mHorizontalSpace;
+            }
+
+            if (position >= mColumnsCount) {
+                outRect.top += mVerticalSpace;
+            }
         }
     }
 }

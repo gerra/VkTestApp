@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +40,9 @@ public class StickerPickerPresenterImpl implements StickerPickerPresenter {
         }
 
         List<StickerProvider> stickerProviders = new ArrayList<>(stickerPaths.length);
-        for (String stickerPath : stickerPaths) {
-            stickerProviders.add(new StickerProviderImpl(assetManager, stickerPath));
+        for (String stickerFileName : stickerPaths) {
+            String stickerFilePath = STICKERS_FOLDER_NAME + File.separator + stickerFileName;
+            stickerProviders.add(new StickerProviderImpl(assetManager, stickerFilePath));
         }
 
         if (mStickerPickerView != null) {

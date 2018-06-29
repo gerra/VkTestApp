@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+
+        <item name="actionBarTheme">@style/AppTheme.ActionBarTheme</item>
+        <item name="actionBarStyle">@style/ActionBar</item>
+    </style>
+
+    <style name="AppTheme.ActionBarTheme" parent="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="colorControlHighlight">@color/colorAccent</item>
+    </style>
+
     <style name="StickerPickerDialog" parent="Theme.Design.Light.BottomSheetDialog">
         <item name="android:windowCloseOnTouchOutside">false</item>
         <item name="android:windowIsTranslucent">true</item>

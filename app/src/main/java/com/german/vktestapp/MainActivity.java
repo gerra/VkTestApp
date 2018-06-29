@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 
 public class MainActivity extends AppCompatActivity implements
@@ -23,6 +24,7 @@ public class MainActivity extends AppCompatActivity implements
         getSupportActionBar().setCustomView(R.layout.action_bar);
 
         View actionBarView = getSupportActionBar().getCustomView();
+        ((Toolbar) actionBarView.getParent()).setContentInsetsAbsolute(0, 0);
         actionBarView.findViewById(R.id.show_sticker_picker)
                 .setOnClickListener(v -> new StickerPickerDialogFragment().show(getSupportFragmentManager(), null));
     }

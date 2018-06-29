@@ -1,4 +1,4 @@
-package com.german.vktestapp;
+package com.german.vktestapp.stickerpicker;
 
 import android.content.Context;
 import android.support.annotation.NonNull;

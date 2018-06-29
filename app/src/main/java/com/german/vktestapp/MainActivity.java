@@ -8,6 +8,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 
+import com.german.vktestapp.stickerpicker.StickerPickerDialogFragment;
+
 public class MainActivity extends AppCompatActivity implements
         StoryView, StickerPickListener {
     @Override

@@ -1,4 +1,4 @@
-package com.german.vktestapp;
+package com.german.vktestapp.stickerpicker;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -13,6 +13,10 @@ import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import com.german.vktestapp.R;
+import com.german.vktestapp.StickerPickListener;
+import com.german.vktestapp.StickerProvider;
 
 import java.util.List;
 

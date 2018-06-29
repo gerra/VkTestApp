@@ -1,4 +1,4 @@
-package com.german.vktestapp;
+package com.german.vktestapp.stickerpicker;
 
 import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
@@ -6,6 +6,9 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+
+import com.german.vktestapp.StickerPickListener;
+import com.german.vktestapp.StickerProvider;
 
 import java.io.IOException;
 import java.util.List;

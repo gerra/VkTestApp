@@ -6,11 +6,25 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
-    <com.german.vktestapp.StoryEditorView
-        android:id="@+id/story_editor_view"
+    <!--<com.german.vktestapp.StoryEditorView-->
+        <!--android:id="@+id/story_editor_view"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="0dp"-->
+        <!--android:layout_weight="1"/>-->
+
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_height="match_parent"
+        android:layout_weight="1">
+        <com.german.vktestapp.StoryEditorView
+            android:layout_gravity="center"
+            android:id="@+id/story_editor_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"/>
+    </FrameLayout>
+
+
 
     <View
         android:layout_width="match_parent"

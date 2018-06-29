@@ -42,9 +42,9 @@ public class StoryEditorView extends ViewGroup {
     public void setBackground(@Nullable Drawable drawable) {
         if (mBackgroundImageView == null) {
             mBackgroundImageView = new ImageView(getContext());
-            mBackgroundImageView.setLayoutParams(new ViewGroup.LayoutParams(LayoutParams.MATCH_PARENT,
-                                                                            LayoutParams.MATCH_PARENT));
-            mBackgroundImageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            mBackgroundImageView.setLayoutParams(new ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT,
+                                                                            LayoutParams.WRAP_CONTENT));
+            mBackgroundImageView.setAdjustViewBounds(true);
 
             addView(mBackgroundImageView);
         }
@@ -57,11 +57,35 @@ public class StoryEditorView extends ViewGroup {
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
 
+        int backgroundWidth;
+        int backgroundHeight;
         if (mBackgroundImageView != null) {
             measureChild(mBackgroundImageView, widthMeasureSpec, heightMeasureSpec);
+            Drawable drawable = mBackgroundImageView.getDrawable();
+            if (drawable != null) {
+                int drawableWidth = drawable.getIntrinsicWidth();
+                drawableWidth = drawableWidth != -1 ? drawableWidth : width;
+
+                int drawableHeight = drawable.getIntrinsicHeight();
+                drawableHeight = drawableHeight != -1 ? drawableHeight : height;
+
+                float widthCoef = 1.0f * width / drawableWidth;
+                float heightCoef = 1.0f * height / drawableHeight;
+
+                float coef = Math.min(widthCoef, heightCoef);
+
+                backgroundWidth = Math.round(drawableWidth * coef);
+                backgroundHeight = Math.round(drawableHeight * coef);
+            } else {
+                backgroundWidth = width;
+                backgroundHeight = height;
+            }
+        } else {
+            backgroundWidth = width;
+            backgroundHeight = height;
         }
 
-        setMeasuredDimension(width, height);
+        setMeasuredDimension(backgroundWidth, backgroundHeight);
     }
 
     @Override
@@ -72,8 +96,8 @@ public class StoryEditorView extends ViewGroup {
 
             mBackgroundImageView.layout(childLeft,
                                         childTop,
-                                        childLeft + mBackgroundImageView.getMeasuredWidth(),
-                                        childTop + mBackgroundImageView.getMeasuredHeight());
+                                        childLeft + getMeasuredWidth(),
+                                        childTop + getMeasuredHeight());
         }
     }
 }

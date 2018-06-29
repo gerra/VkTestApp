@@ -3,6 +3,7 @@ package com.german.vktestapp.backgrounds;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -10,12 +11,12 @@ import android.widget.ImageView;
 import com.german.vktestapp.AddBackgroundClickListener;
 import com.german.vktestapp.BackgroundPickListener;
 import com.german.vktestapp.R;
-import com.german.vktestapp.utils.RoundCornersDrawable;
+import com.german.vktestapp.view.RoundCornersDrawable;
 
 import java.util.List;
 
 public class BackgroundsAdapter extends RecyclerView.Adapter<BackgroundsAdapter.BackgroundViewHolder> {
-    private static final int UNKNOWN_POSITION = -1;
+    public static final int UNKNOWN_POSITION = -1;
 
     private static final int TYPE_THUMB = 1;
     private static final int TYPE_ADD = 2;
@@ -79,14 +80,17 @@ public class BackgroundsAdapter extends RecyclerView.Adapter<BackgroundsAdapter.
 
     public void setSelectedPosition(int selectedPosition) {
         if (selectedPosition != mSelectedPosition) {
-            Background background = mBackgroundProviders.get(selectedPosition)
-                    .getBackground();
+            Background background = selectedPosition != UNKNOWN_POSITION
+                    ? mBackgroundProviders.get(selectedPosition)
+                        .getBackground()
+                    : null;
+
             setSelectedPosition(selectedPosition, background);
 
         }
     }
 
-    private void setSelectedPosition(int selectedPosition, @NonNull Background background) {
+    private void setSelectedPosition(int selectedPosition, @Nullable Background background) {
         if (selectedPosition != mSelectedPosition) {
             int oldSelected = mSelectedPosition;
             mSelectedPosition = selectedPosition;
@@ -96,7 +100,9 @@ public class BackgroundsAdapter extends RecyclerView.Adapter<BackgroundsAdapter.
             if (mSelectedPosition != UNKNOWN_POSITION) {
                 notifyItemChanged(mSelectedPosition);
             }
-            mBackgroundPickListener.onBackgroundPicked(background);
+            if (background != null) {
+                mBackgroundPickListener.onBackgroundPicked(background);
+            }
         }
     }
 

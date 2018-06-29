@@ -36,8 +36,8 @@ public class BackgroundsHelper {
             final int colorTo = Color.parseColor(gradient[1]);
             backgroundProviders.add(() -> makeGradientBackground(colorFrom, colorTo));
         }
-        backgroundProviders.add(() -> new ResourcesBackground(R.drawable.thumb_beach, R.drawable.thumb_beach));
-        backgroundProviders.add(() -> new ResourcesBackground(R.drawable.thumb_stars, R.drawable.thumb_stars));
+        backgroundProviders.add(() -> new ResourcesBackground(R.drawable.thumb_beach, R.drawable.full_background_beach));
+        backgroundProviders.add(() -> new ResourcesBackground(R.drawable.thumb_stars, R.drawable.full_background_stars));
         return backgroundProviders;
     }
 

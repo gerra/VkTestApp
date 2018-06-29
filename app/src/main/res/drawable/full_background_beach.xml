@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--<item android:gravity="center|clip_vertical|clip_horizontal">-->
+    <!--<layer-list>-->
 
+    <!--</layer-list>-->
+    <!--</item>-->
+
+    <item>
+        <bitmap android:src="@drawable/bg_beach_center"/>
+    </item>
+    <item>
+        <bitmap android:gravity="top" android:src="@drawable/bg_beach_top"/>
+    </item>
+
+    <item>
+        <bitmap android:gravity="bottom" android:src="@drawable/bg_beach_bottom"/>
+    </item>
 </layer-list>

@@ -1,4 +1,4 @@
-package com.german.vktestapp.utils;
+package com.german.vktestapp.view;
 
 import android.content.res.ColorStateList;
 import android.graphics.Canvas;

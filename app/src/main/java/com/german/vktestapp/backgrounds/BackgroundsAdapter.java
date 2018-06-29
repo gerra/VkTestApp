@@ -90,6 +90,10 @@ public class BackgroundsAdapter extends RecyclerView.Adapter<BackgroundsAdapter.
         }
     }
 
+    public int getSelectedPosition() {
+        return mSelectedPosition;
+    }
+
     private void setSelectedPosition(int selectedPosition, @Nullable Background background) {
         if (selectedPosition != mSelectedPosition) {
             int oldSelected = mSelectedPosition;

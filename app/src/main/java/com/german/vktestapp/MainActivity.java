@@ -30,9 +30,12 @@ import com.german.vktestapp.utils.PermissionsUtils;
 import com.german.vktestapp.utils.Utils;
 
 // TODO: save selected item
+// TODO: only portrait
 public class MainActivity extends AppCompatActivity implements
         StoryView, StickerPickListener, BackgroundPickListener, AddBackgroundClickListener {
     private static final String TAG = "[MainActivity]";
+
+    private static final String KEY_SELECTED_POSITION = "selectedPosition";
 
     private static final String PERMISSION_READ_STORAGE = Manifest.permission.READ_EXTERNAL_STORAGE;
     private static final int REQUEST_CODE_READ_PERMISSION = 50;
@@ -51,7 +54,10 @@ public class MainActivity extends AppCompatActivity implements
         mStoryEditorView = findViewById(R.id.story_editor_view);
 
         setActionBar();
-        setBackgroundsPanel();
+        int selectedPosition = savedInstanceState != null
+                ? savedInstanceState.getInt(KEY_SELECTED_POSITION, BackgroundsAdapter.UNKNOWN_POSITION)
+                : 0;
+        setBackgroundsPanel(selectedPosition);
     }
 
     private void setActionBar() {
@@ -65,14 +71,14 @@ public class MainActivity extends AppCompatActivity implements
                 .setOnClickListener(v -> new StickerPickerDialogFragment().show(getSupportFragmentManager(), null));
     }
 
-    private void setBackgroundsPanel() {
+    private void setBackgroundsPanel(int selectedPosition) {
         mBackgroundsAdapter = new BackgroundsAdapter(BackgroundsHelper.getDefaultBackgrounds(), this, this);
 
         RecyclerView backgroundsListView = findViewById(R.id.backgrounds_list);
         backgroundsListView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         backgroundsListView.setAdapter(mBackgroundsAdapter);
         backgroundsListView.addItemDecoration(new BackgroundsItemDecoration(this));
-        mBackgroundsAdapter.setSelectedPosition(0);
+        mBackgroundsAdapter.setSelectedPosition(selectedPosition);
     }
 
     @Override
@@ -129,6 +135,12 @@ public class MainActivity extends AppCompatActivity implements
             default:
                 super.onActivityResult(requestCode, resultCode, data);
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(KEY_SELECTED_POSITION, mBackgroundsAdapter.getSelectedPosition());
     }
 
     private void onPhotoSelected(@NonNull Uri selectedUri) {

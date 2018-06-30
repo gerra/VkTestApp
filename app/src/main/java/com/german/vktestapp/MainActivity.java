@@ -19,7 +19,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 
 import com.german.vktestapp.backgrounds.Background;
@@ -69,6 +68,8 @@ public class MainActivity extends AppCompatActivity implements
         ((Toolbar) actionBarView.getParent()).setContentInsetsAbsolute(0, 0);
         actionBarView.findViewById(R.id.show_sticker_picker)
                 .setOnClickListener(v -> new StickerPickerDialogFragment().show(getSupportFragmentManager(), null));
+        actionBarView.findViewById(R.id.change_text_style)
+                .setOnClickListener(v -> mStoryEditorView.changeTextStyle());
     }
 
     private void setBackgroundsPanel(int selectedPosition) {
@@ -83,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onStickerPicked(@NonNull Bitmap sticker) {
-        Log.d(TAG, "onStickerPicked()");
+        mStoryEditorView.addSticker(sticker);
     }
 
     @Override

@@ -13,7 +13,6 @@ import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -21,6 +20,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 
+import com.german.vktestapp.stickers.StickersController;
 import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.StickerView;
 
@@ -197,7 +197,7 @@ public class StoryEditorView extends ViewGroup {
                 // This just added sticker, we need to save it sizes for change background in future
                 float widthRatio = 1f * stickerView.getMeasuredWidth() / width;
                 float heightRatio = 1f * stickerView.getMeasuredHeight() / height;
-                mStickersController.setMeasured(stickerView, widthRatio, heightRatio);
+                mStickersController.setRatios(stickerView, widthRatio, heightRatio);
             } else {
                 StickersController.StickerLayoutInfo info = mStickersController.getLayoutInfo(stickerView);
                 if (info != null) {
@@ -266,36 +266,25 @@ public class StoryEditorView extends ViewGroup {
     }
 
     @Override
-    public boolean onKeyPreIme(int keyCode, KeyEvent event) {
-        return super.onKeyPreIme(keyCode, event);
-    }
-
-    @Override
-    public boolean onInterceptTouchEvent(MotionEvent ev) {
-        return super.onInterceptTouchEvent(ev);
-    }
-
-    @Override
     public boolean onTouchEvent(MotionEvent event) {
-        boolean result = false;
+        boolean handled = false;
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 // If there is no children for intercept
-                result = true;
+                handled = true;
                 mHideKeyboardHandler.postDelayed(mHideKeyboardRunnable, CLICK_DOWN_TIME);
                 break;
             case MotionEvent.ACTION_UP:
                 if (event.getEventTime() - event.getDownTime() < CLICK_DOWN_TIME) {
-                    result = performClick();
+                    handled = performClick();
                     mHideKeyboardHandler.removeCallbacks(mHideKeyboardRunnable);
                 }
                 break;
             default:
-                result = super.onTouchEvent(event);
+                handled = super.onTouchEvent(event);
                 break;
         }
-        Log.d(TAG, "onTouchEvent(): " + result);
-        return result;
+        return handled;
     }
 
     @Override
@@ -357,6 +346,7 @@ public class StoryEditorView extends ViewGroup {
         if (coordinates == null) {
             Log.w(TAG, "wtf? StickerView is\'nt in StickersController? So, okay... Let\'s remove it");
             removeView(stickerView);
+            mStickersController.removeSticker(stickerView);
             return;
         }
         float stickerCenterX = (parentRight - parentLeft) * coordinates.getX();

@@ -8,8 +8,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
-import com.german.vktestapp.AddBackgroundClickListener;
-import com.german.vktestapp.BackgroundPickListener;
 import com.german.vktestapp.R;
 import com.german.vktestapp.view.RoundCornersDrawable;
 

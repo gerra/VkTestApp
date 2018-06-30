@@ -15,8 +15,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.german.vktestapp.R;
-import com.german.vktestapp.StickerPickListener;
-import com.german.vktestapp.StickerProvider;
 
 import java.util.List;
 

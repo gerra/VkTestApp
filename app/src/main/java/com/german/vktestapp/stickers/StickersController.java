@@ -1,4 +1,4 @@
-package com.german.vktestapp;
+package com.german.vktestapp.stickers;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -22,7 +22,9 @@ public class StickersController {
         mParent = parent;
     }
 
-    void addSticker(@NonNull StickerView stickerView, float centerX, float centerY) {
+    public void addSticker(@NonNull StickerView stickerView,
+                    float centerX,
+                    float centerY) {
         StickerLayoutInfo stickerLayoutInfo = new StickerLayoutInfo(centerX, centerY);
         mCoordinates.put(stickerView, stickerLayoutInfo);
 
@@ -36,37 +38,28 @@ public class StickersController {
         mOrder.add(stickerView);
     }
 
-    void removeSticker(@NonNull StickerView stickerView) {
+    public void removeSticker(@NonNull StickerView stickerView) {
         mCoordinates.remove(stickerView);
         mOrder.remove(stickerView);
     }
 
     @Nullable
-    StickerLayoutInfo getLayoutInfo(@NonNull StickerView stickerView) {
+    public StickerLayoutInfo getLayoutInfo(@NonNull StickerView stickerView) {
         return mCoordinates.get(stickerView);
     }
 
-    boolean wasMeasured(@NonNull StickerView stickerView) {
-        StickerLayoutInfo info = mCoordinates.get(stickerView);
-        if (info == null) {
-            Log.w(TAG, "wtf? There is no this sticker?");
-        }
-        return info != null && info.isWasMeasured();
-    }
-
-    void setMeasured(@NonNull StickerView stickerView, float widthRatio, float heightRatio) {
+    public void setRatios(@NonNull StickerView stickerView, float widthRatio, float heightRatio) {
         StickerLayoutInfo info = mCoordinates.get(stickerView);
         if (info == null) {
             Log.w(TAG, "wtf? There is no this sticker?");
             return;
         }
-        info.setWasMeasured(true);
         info.setWidthRatio(widthRatio);
         info.setHeightRatio(heightRatio);
     }
 
     @Nullable
-    StickerView getStickerView(int index) {
+    public StickerView getStickerView(int index) {
         return index < mOrder.size()
                 ? mOrder.get(index)
                 : null;
@@ -79,8 +72,6 @@ public class StickersController {
         private float mWidthRatio;
         private float mHeightRatio;
 
-        private boolean mWasMeasured;
-
         public StickerLayoutInfo(float x, float y) {
             mX = x;
             mY = y;
@@ -92,14 +83,6 @@ public class StickersController {
 
         public float getY() {
             return mY;
-        }
-
-        public boolean isWasMeasured() {
-            return mWasMeasured;
-        }
-
-        public void setWasMeasured(boolean wasMeasured) {
-            mWasMeasured = wasMeasured;
         }
 
         public void setWidthRatio(float widthRatio) {

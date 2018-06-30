@@ -1,4 +1,4 @@
-package com.german.vktestapp;
+package com.german.vktestapp.stickerpicker;
 
 import android.graphics.Bitmap;
 import android.support.annotation.NonNull;

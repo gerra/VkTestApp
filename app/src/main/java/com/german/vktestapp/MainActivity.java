@@ -21,9 +21,12 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 
+import com.german.vktestapp.backgrounds.AddBackgroundClickListener;
 import com.german.vktestapp.backgrounds.Background;
+import com.german.vktestapp.backgrounds.BackgroundPickListener;
 import com.german.vktestapp.backgrounds.BackgroundsAdapter;
 import com.german.vktestapp.backgrounds.BackgroundsHelper;
+import com.german.vktestapp.stickerpicker.StickerPickListener;
 import com.german.vktestapp.stickerpicker.StickerPickerDialogFragment;
 import com.german.vktestapp.utils.PermissionsUtils;
 import com.german.vktestapp.utils.Utils;

@@ -20,6 +20,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 
+import com.german.vktestapp.stickers.StickerLayoutInfo;
 import com.german.vktestapp.stickers.StickersController;
 import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.StickerView;
@@ -94,11 +95,12 @@ public class StoryEditorView extends ViewGroup {
         ViewUtils.setEditTextGravity(mEditText, Gravity.START, Gravity.CENTER);
         mEditText.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
-                mChildCountOnLastModifyEditText = getChildCount();
+                updateChildCountOnLastModifyEditText();
             } else {
-                ViewUtils.hideKeyboard(this);
+                mHideKeyboardRunnable.run();
             }
         });
+        mEditText.setOnClickListener(v -> updateChildCountOnLastModifyEditText());
         mEditText.requestFocus();
     }
 
@@ -126,6 +128,8 @@ public class StoryEditorView extends ViewGroup {
             mStickersController = new StickersController(this);
         }
         mStickersController.addSticker(stickerView, 0.5f, 0.5f);
+
+        mHideKeyboardRunnable.run();
     }
 
     @Override
@@ -140,27 +144,22 @@ public class StoryEditorView extends ViewGroup {
 
         int backgroundWidth;
         int backgroundHeight;
-        if (mBackgroundImageView != null) {
-            measureChild(mBackgroundImageView, widthMeasureSpec, heightMeasureSpec);
-            Drawable drawable = mBackgroundImageView.getDrawable();
-            if (drawable != null) {
-                int drawableWidth = drawable.getIntrinsicWidth();
-                drawableWidth = drawableWidth != -1 ? drawableWidth : width;
+        measureChild(mBackgroundImageView, widthMeasureSpec, heightMeasureSpec);
+        Drawable drawable = mBackgroundImageView.getDrawable();
+        if (drawable != null) {
+            int drawableWidth = drawable.getIntrinsicWidth();
+            drawableWidth = drawableWidth != -1 ? drawableWidth : width;
 
-                int drawableHeight = drawable.getIntrinsicHeight();
-                drawableHeight = drawableHeight != -1 ? drawableHeight : height;
+            int drawableHeight = drawable.getIntrinsicHeight();
+            drawableHeight = drawableHeight != -1 ? drawableHeight : height;
 
-                float widthCoef = 1.0f * width / drawableWidth;
-                float heightCoef = 1.0f * height / drawableHeight;
+            float widthCoef = 1.0f * width / drawableWidth;
+            float heightCoef = 1.0f * height / drawableHeight;
 
-                float coef = Math.min(widthCoef, heightCoef);
+            float coef = Math.min(widthCoef, heightCoef);
 
-                backgroundWidth = Math.round(drawableWidth * coef);
-                backgroundHeight = Math.round(drawableHeight * coef);
-            } else {
-                backgroundWidth = width;
-                backgroundHeight = height;
-            }
+            backgroundWidth = Math.round(drawableWidth * coef);
+            backgroundHeight = Math.round(drawableHeight * coef);
         } else {
             backgroundWidth = width;
             backgroundHeight = height;
@@ -175,55 +174,6 @@ public class StoryEditorView extends ViewGroup {
         measureStickers(backgroundWidth, backgroundHeight);
 
         setMeasuredDimension(backgroundWidth, backgroundHeight);
-    }
-
-    private void measureStickers(int width, int height) {
-        int childCount = getChildCount();
-        for (int i = 0; i < childCount; i++) {
-            View child = getChildAt(i);
-            if (!(child instanceof StickerView)) {
-                continue;
-            }
-
-            StickerView stickerView = (StickerView) child;
-
-            boolean wasMeasured = stickerView.getMeasuredHeight() != 0
-                    && stickerView.getMeasuredWidth() != 0;
-            if (!wasMeasured) {
-                measureChild(stickerView,
-                             MeasureSpec.makeMeasureSpec(width, MeasureSpec.UNSPECIFIED),
-                             MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
-
-                // This just added sticker, we need to save it sizes for change background in future
-                float widthRatio = 1f * stickerView.getMeasuredWidth() / width;
-                float heightRatio = 1f * stickerView.getMeasuredHeight() / height;
-                mStickersController.setRatios(stickerView, widthRatio, heightRatio);
-            } else {
-                StickersController.StickerLayoutInfo info = mStickersController.getLayoutInfo(stickerView);
-                if (info != null) {
-                    int oldStickerWidth = stickerView.getMeasuredWidth();
-                    int oldStickerHeight = stickerView.getMeasuredHeight();
-
-                    float oldWidthRatio = info.getWidthRatio();
-                    float oldHeightRatio = info.getHeightRatio();
-
-                    float currentWidthRatio = 1f * oldStickerWidth / width;
-                    float currentHeightRatio = 1f * oldStickerHeight / height;
-
-                    float ratio = Math.min(oldWidthRatio / currentWidthRatio,
-                                           oldHeightRatio / currentHeightRatio);
-
-                    float specWidth = oldStickerWidth * ratio;
-                    float specHeight = oldStickerHeight * ratio;
-
-                    measureChild(stickerView,
-                                 MeasureSpec.makeMeasureSpec(Math.round(specWidth), MeasureSpec.EXACTLY),
-                                 MeasureSpec.makeMeasureSpec(Math.round(specHeight), MeasureSpec.EXACTLY));
-                } else {
-                    Log.w(TAG, "wtf? There is no StickerView in controller?");
-                }
-            }
-        }
     }
 
     @Override
@@ -293,7 +243,59 @@ public class StoryEditorView extends ViewGroup {
         mEditText.setVisibility(VISIBLE);
         mEditText.requestFocus();
         ViewUtils.showKeyboard(mEditText, true);
+        updateChildCountOnLastModifyEditText();
         return true;
+    }
+
+    private void measureStickers(int width, int height) {
+        int childCount = getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View child = getChildAt(i);
+            if (!(child instanceof StickerView)) {
+                continue;
+            }
+
+            StickerView stickerView = (StickerView) child;
+
+            boolean wasMeasured = stickerView.getMeasuredHeight() != 0
+                    && stickerView.getMeasuredWidth() != 0;
+            if (!wasMeasured) {
+                measureChild(stickerView,
+                             MeasureSpec.makeMeasureSpec(width, MeasureSpec.UNSPECIFIED),
+                             MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
+
+                // This just added sticker, we need to save it sizes for change background in future
+                float widthRatio = 1f * stickerView.getMeasuredWidth() / width;
+                float heightRatio = 1f * stickerView.getMeasuredHeight() / height;
+                mStickersController.setRatios(stickerView, widthRatio, heightRatio);
+            } else {
+                StickerLayoutInfo info = mStickersController.getLayoutInfo(stickerView);
+                if (info != null) {
+                    if (!info.isTouched()) {
+                        int oldStickerWidth = stickerView.getMeasuredWidth();
+                        int oldStickerHeight = stickerView.getMeasuredHeight();
+
+                        float oldWidthRatio = info.getWidthRatio();
+                        float oldHeightRatio = info.getHeightRatio();
+
+                        float currentWidthRatio = 1f * oldStickerWidth / width;
+                        float currentHeightRatio = 1f * oldStickerHeight / height;
+
+                        float ratio = Math.min(oldWidthRatio / currentWidthRatio,
+                                               oldHeightRatio / currentHeightRatio);
+
+                        float specWidth = oldStickerWidth * ratio;
+                        float specHeight = oldStickerHeight * ratio;
+
+                        measureChild(stickerView,
+                                     MeasureSpec.makeMeasureSpec(Math.round(specWidth), MeasureSpec.EXACTLY),
+                                     MeasureSpec.makeMeasureSpec(Math.round(specHeight), MeasureSpec.EXACTLY));
+                    }
+                } else {
+                    Log.w(TAG, "wtf? There is no StickerView in controller?");
+                }
+            }
+        }
     }
 
     private void layoutBackgroundImageView() {
@@ -342,7 +344,7 @@ public class StoryEditorView extends ViewGroup {
                                int parentTop,
                                int parentRight,
                                int parentBottom) {
-        StickersController.StickerLayoutInfo coordinates = mStickersController.getLayoutInfo(stickerView);
+        StickerLayoutInfo coordinates = mStickersController.getLayoutInfo(stickerView);
         if (coordinates == null) {
             Log.w(TAG, "wtf? StickerView is\'nt in StickersController? So, okay... Let\'s remove it");
             removeView(stickerView);
@@ -362,5 +364,9 @@ public class StoryEditorView extends ViewGroup {
                            stickerTop,
                            stickerLeft + stickerWidth,
                            stickerTop + stickerHeight);
+    }
+
+    private void updateChildCountOnLastModifyEditText() {
+        mChildCountOnLastModifyEditText = getChildCount();
     }
 }

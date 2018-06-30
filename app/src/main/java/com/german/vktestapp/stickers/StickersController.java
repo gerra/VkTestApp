@@ -3,7 +3,6 @@ package com.german.vktestapp.stickers;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 
 import com.german.vktestapp.view.StickerView;
@@ -27,15 +26,9 @@ public class StickersController {
                     float centerY) {
         StickerLayoutInfo stickerLayoutInfo = new StickerLayoutInfo(centerX, centerY);
         mCoordinates.put(stickerView, stickerLayoutInfo);
-
-        stickerView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return false;
-            }
-        });
-
         mOrder.add(stickerView);
+
+        stickerView.setOnTouchListener(new StickerTouchListener(stickerLayoutInfo, mParent));
     }
 
     public void removeSticker(@NonNull StickerView stickerView) {
@@ -65,40 +58,4 @@ public class StickersController {
                 : null;
     }
 
-    public static class StickerLayoutInfo {
-        // Percentage relative to parent
-        private float mX;
-        private float mY;
-        private float mWidthRatio;
-        private float mHeightRatio;
-
-        public StickerLayoutInfo(float x, float y) {
-            mX = x;
-            mY = y;
-        }
-
-        public float getX() {
-            return mX;
-        }
-
-        public float getY() {
-            return mY;
-        }
-
-        public void setWidthRatio(float widthRatio) {
-            mWidthRatio = widthRatio;
-        }
-
-        public float getWidthRatio() {
-            return mWidthRatio;
-        }
-
-        public float getHeightRatio() {
-            return mHeightRatio;
-        }
-
-        public void setHeightRatio(float heightRatio) {
-            mHeightRatio = heightRatio;
-        }
-    }
 }

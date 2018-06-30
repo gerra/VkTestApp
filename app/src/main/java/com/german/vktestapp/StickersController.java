@@ -8,6 +8,7 @@ import android.view.View;
 
 import com.german.vktestapp.view.StickerView;
 
+import java.util.LinkedList;
 import java.util.WeakHashMap;
 
 public class StickersController {
@@ -15,6 +16,7 @@ public class StickersController {
 
     private final View mParent;
     private final WeakHashMap<StickerView, StickerLayoutInfo> mCoordinates = new WeakHashMap<>(50);
+    private final LinkedList<StickerView> mOrder = new LinkedList<>();
 
     public StickersController(View parent) {
         mParent = parent;
@@ -30,10 +32,13 @@ public class StickersController {
                 return false;
             }
         });
+
+        mOrder.add(stickerView);
     }
 
     void removeSticker(@NonNull StickerView stickerView) {
         mCoordinates.remove(stickerView);
+        mOrder.remove(stickerView);
     }
 
     @Nullable
@@ -58,6 +63,13 @@ public class StickersController {
         info.setWasMeasured(true);
         info.setWidthRatio(widthRatio);
         info.setHeightRatio(heightRatio);
+    }
+
+    @Nullable
+    StickerView getStickerView(int index) {
+        return index < mOrder.size()
+                ? mOrder.get(index)
+                : null;
     }
 
     public static class StickerLayoutInfo {

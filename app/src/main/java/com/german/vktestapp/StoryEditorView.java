@@ -5,13 +5,17 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Handler;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -20,11 +24,25 @@ import android.widget.ImageView;
 import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.StickerView;
 
+import java.util.concurrent.TimeUnit;
+
 public class StoryEditorView extends ViewGroup {
     private static final String TAG = "[StoryEditorView]";
 
+    private static final long CLICK_DOWN_TIME = TimeUnit.MILLISECONDS.toMillis(500);
+
     private ImageView mBackgroundImageView;
     private EditText mEditText;
+    private int mChildCountOnLastModifyEditText;
+
+    private Handler mHideKeyboardHandler;
+    private final Runnable mHideKeyboardRunnable = () -> {
+        ViewUtils.hideKeyboard(this);
+        mEditText.clearFocus();
+        if (TextUtils.isEmpty(mEditText.getText())) {
+            mEditText.setVisibility(INVISIBLE);
+        }
+    };
 
     private StickersController mStickersController;
     private TextStyleController mTextStyleController;
@@ -50,13 +68,38 @@ public class StoryEditorView extends ViewGroup {
 
     private void init(@NonNull Context context) {
         setClipChildren(false);
+        setFocusable(true);
+        setFocusableInTouchMode(true);
+        setChildrenDrawingOrderEnabled(true);
 
+        initBackgroundImageView(context);
+        initEditText(context);
+
+        mTextStyleController = new TextStyleController(mEditText);
+        mHideKeyboardHandler = new Handler();
+    }
+
+    private void initBackgroundImageView(@NonNull Context context) {
+        mBackgroundImageView = new ImageView(context);
+        mBackgroundImageView.setLayoutParams(new ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT,
+                                                                        LayoutParams.WRAP_CONTENT));
+        mBackgroundImageView.setAdjustViewBounds(true);
+        addView(mBackgroundImageView);
+    }
+
+    private void initEditText(@NonNull Context context) {
         mEditText = (EditText) LayoutInflater.from(context)
                 .inflate(R.layout.story_edit_text, this, false);
         addView(mEditText);
         ViewUtils.setEditTextGravity(mEditText, Gravity.START, Gravity.CENTER);
-
-        mTextStyleController = new TextStyleController(mEditText);
+        mEditText.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                mChildCountOnLastModifyEditText = getChildCount();
+            } else {
+                ViewUtils.hideKeyboard(this);
+            }
+        });
+        mEditText.requestFocus();
     }
 
     @Override
@@ -87,15 +130,6 @@ public class StoryEditorView extends ViewGroup {
 
     @Override
     public void setBackground(@Nullable Drawable drawable) {
-        if (mBackgroundImageView == null) {
-            mBackgroundImageView = new ImageView(getContext());
-            mBackgroundImageView.setLayoutParams(new ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT,
-                                                                            LayoutParams.WRAP_CONTENT));
-            mBackgroundImageView.setAdjustViewBounds(true);
-
-            addView(mBackgroundImageView, 0);
-        }
-
         mBackgroundImageView.setImageDrawable(drawable);
     }
 
@@ -203,6 +237,74 @@ public class StoryEditorView extends ViewGroup {
         layoutBackgroundImageView();
         layoutEditText(parentLeft, parentTop, parentRight, parentBottom);
         layoutStickers(parentLeft, parentTop, parentRight, parentBottom);
+    }
+
+    @Override
+    protected int getChildDrawingOrder(int childCount, int i) {
+        if (i == 0) {
+            return indexOfChild(mBackgroundImageView);
+        }
+
+        if (i == 1 && mEditText.getVisibility() != VISIBLE
+                || i == mChildCountOnLastModifyEditText - 1) {
+            return indexOfChild(mEditText);
+        }
+
+        boolean editTextWasDrawn = i > 1 && mEditText.getVisibility() != VISIBLE
+                || i > mChildCountOnLastModifyEditText - 1;
+
+        int stickerIndex = i
+                - 1 // for mBackgroundImage
+                - (editTextWasDrawn ? 1 : 0);
+
+        StickerView stickerView = mStickersController.getStickerView(stickerIndex);
+        if (stickerView == null) {
+            Log.d(TAG, "wtf? Incorrect order? " + i);
+        }
+
+        return indexOfChild(stickerView);
+    }
+
+    @Override
+    public boolean onKeyPreIme(int keyCode, KeyEvent event) {
+        return super.onKeyPreIme(keyCode, event);
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        boolean result = false;
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                // If there is no children for intercept
+                result = true;
+                mHideKeyboardHandler.postDelayed(mHideKeyboardRunnable, CLICK_DOWN_TIME);
+                break;
+            case MotionEvent.ACTION_UP:
+                if (event.getEventTime() - event.getDownTime() < CLICK_DOWN_TIME) {
+                    result = performClick();
+                    mHideKeyboardHandler.removeCallbacks(mHideKeyboardRunnable);
+                }
+                break;
+            default:
+                result = super.onTouchEvent(event);
+                break;
+        }
+        Log.d(TAG, "onTouchEvent(): " + result);
+        return result;
+    }
+
+    @Override
+    public boolean performClick() {
+        super.performClick();
+        mEditText.setVisibility(VISIBLE);
+        mEditText.requestFocus();
+        ViewUtils.showKeyboard(mEditText, true);
+        return true;
     }
 
     private void layoutBackgroundImageView() {

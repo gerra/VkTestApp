@@ -1,10 +1,13 @@
 package com.german.vktestapp.utils;
 
+import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
 public class ViewUtils {
@@ -31,6 +34,25 @@ public class ViewUtils {
                 fixGravity(editText, s, cursorGravity, textGravity);
             }
         });
+    }
+
+    public static void showKeyboard(@NonNull EditText editText, boolean requestFocus) {
+        Context context = editText.getContext();
+        InputMethodManager inputManager = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (inputManager != null) {
+            inputManager.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
+        }
+        if (requestFocus) {
+            editText.requestFocus();
+        }
+    }
+
+    public static void hideKeyboard(@NonNull View windowTokenHolder) {
+        Context context = windowTokenHolder.getContext();
+        InputMethodManager inputManager = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (inputManager != null) {
+            inputManager.hideSoftInputFromWindow(windowTokenHolder.getWindowToken(), 0);
+        }
     }
 
     @SuppressWarnings("WeakerAccess")

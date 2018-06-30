@@ -6,6 +6,9 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 
+import com.german.vktestapp.utils.ViewUtils;
+import com.german.vktestapp.view.StickerView;
+
 public class StickerTouchListener implements View.OnTouchListener, ScaleGestureDetector.OnScaleGestureListener {
     private static final String TAG = "[StickerTouchListener]";
 
@@ -13,6 +16,8 @@ public class StickerTouchListener implements View.OnTouchListener, ScaleGestureD
     private final StickerLayoutInfo mLayoutInfo;
     @NonNull
     private final View mParent;
+    @NonNull
+    private final OnStartTouchListener mOnStartTouchListener;
 
     private final ScaleGestureDetector mScaleDetector;
 
@@ -20,16 +25,22 @@ public class StickerTouchListener implements View.OnTouchListener, ScaleGestureD
     private float mLastTouchX;
     private float mLastTouchY;
 
-    public StickerTouchListener(@NonNull StickerLayoutInfo layoutInfo, @NonNull View parent) {
+    public StickerTouchListener(@NonNull StickerLayoutInfo layoutInfo,
+                                @NonNull View parent,
+                                @NonNull OnStartTouchListener onStartTouchListener) {
         mLayoutInfo = layoutInfo;
         mParent = parent;
+        mOnStartTouchListener = onStartTouchListener;
 
         mScaleDetector = new ScaleGestureDetector(parent.getContext(), this);
     }
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-        Log.d(TAG, event.toString());
+        if (!(v instanceof StickerView)) {
+            return false;
+        }
+//        Log.d(TAG, MotionEvent.actionToString(event.getAction()) + " " + event.getRawX() + " " + event.getRawY());;
 
         mScaleDetector.onTouchEvent(event);
 
@@ -46,11 +57,14 @@ public class StickerTouchListener implements View.OnTouchListener, ScaleGestureD
                 mActivePointerId = event.getPointerId(pointerIndex);
 
                 mLayoutInfo.setTouched(true);
+                mOnStartTouchListener.onStartTouch((StickerView) v);
 
                 break;
             }
             case MotionEvent.ACTION_MOVE: {
                 int pointerIndex = event.findPointerIndex(mActivePointerId);
+
+//                Log.d(TAG, event.getRawX() + " " + event.getX(pointerIndex));
 
                 float x = event.getRawX();
                 float y = event.getRawY();
@@ -78,6 +92,9 @@ public class StickerTouchListener implements View.OnTouchListener, ScaleGestureD
                 break;
             }
             case MotionEvent.ACTION_UP: {
+                if (ViewUtils.needToPerformClick(event)) {
+                    v.performClick();
+                }
                 mLayoutInfo.setTouched(false);
                 break;
             }
@@ -86,12 +103,14 @@ public class StickerTouchListener implements View.OnTouchListener, ScaleGestureD
                 break;
             }
         }
+
         return true;
     }
 
     @Override
     public boolean onScale(ScaleGestureDetector detector) {
-        return false;
+        Log.d(TAG, "onScale(): " + detector.getScaleFactor());
+        return true;
     }
 
     @Override

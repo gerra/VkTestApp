@@ -5,35 +5,39 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
 
+import com.german.vktestapp.ViewOrderController;
 import com.german.vktestapp.view.StickerView;
 
-import java.util.LinkedList;
 import java.util.WeakHashMap;
 
 public class StickersController {
     private static final String TAG = "[StickersController]";
 
+    @NonNull
     private final View mParent;
-    private final WeakHashMap<StickerView, StickerLayoutInfo> mCoordinates = new WeakHashMap<>(50);
-    private final LinkedList<StickerView> mOrder = new LinkedList<>();
+    @NonNull
+    private final ViewOrderController mViewOrderController;
 
-    public StickersController(View parent) {
+    private final WeakHashMap<StickerView, StickerLayoutInfo> mCoordinates = new WeakHashMap<>(50);
+
+    public StickersController(@NonNull View parent,
+                              @NonNull ViewOrderController viewOrderController) {
         mParent = parent;
+        mViewOrderController = viewOrderController;
     }
 
-    public void addSticker(@NonNull StickerView stickerView,
-                    float centerX,
-                    float centerY) {
+    public void addSticker(@NonNull StickerView stickerView, float centerX, float centerY) {
         StickerLayoutInfo stickerLayoutInfo = new StickerLayoutInfo(centerX, centerY);
         mCoordinates.put(stickerView, stickerLayoutInfo);
-        mOrder.add(stickerView);
 
-        stickerView.setOnTouchListener(new StickerTouchListener(stickerLayoutInfo, mParent));
+        stickerView.setOnTouchListener(new StickerTouchListener(stickerLayoutInfo,
+                                                                mParent,
+                                                                this::moveToTop));
+        stickerView.setOnClickListener(this::moveToTop);
     }
 
     public void removeSticker(@NonNull StickerView stickerView) {
         mCoordinates.remove(stickerView);
-        mOrder.remove(stickerView);
     }
 
     @Nullable
@@ -51,11 +55,11 @@ public class StickersController {
         info.setHeightRatio(heightRatio);
     }
 
-    @Nullable
-    public StickerView getStickerView(int index) {
-        return index < mOrder.size()
-                ? mOrder.get(index)
-                : null;
+    private void moveToTop(@NonNull View view) {
+        if (view instanceof StickerView) {
+            StickerView stickerView = (StickerView) view;
+            mViewOrderController.moveToTop(stickerView);
+            mParent.invalidate();
+        }
     }
-
 }

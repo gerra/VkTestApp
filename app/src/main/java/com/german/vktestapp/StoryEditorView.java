@@ -3,6 +3,7 @@ package com.german.vktestapp;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
@@ -30,22 +31,22 @@ import java.util.concurrent.TimeUnit;
 public class StoryEditorView extends ViewGroup {
     private static final String TAG = "[StoryEditorView]";
 
-    private static final long CLICK_DOWN_TIME = TimeUnit.MILLISECONDS.toMillis(500);
+    static final long LONG_CLICK_TIME = TimeUnit.MILLISECONDS.toMillis(500);
+
+    @NonNull
+    private static Rect sRect = new Rect();
 
     private ImageView mBackgroundImageView;
     private EditText mEditText;
-    private int mChildCountOnLastModifyEditText;
 
-    private Handler mHideKeyboardHandler;
-    private final Runnable mHideKeyboardRunnable = () -> {
-        ViewUtils.hideKeyboard(this);
-        mEditText.clearFocus();
-        if (TextUtils.isEmpty(mEditText.getText())) {
-            mEditText.setVisibility(INVISIBLE);
-        }
-    };
+    Handler mHideKeyboardHandler;
+    final Runnable mHideKeyboardRunnable = this::hideKeyboard;
 
+    final ViewOrderController mViewOrderController = new ViewOrderController();
     private StickersController mStickersController;
+
+    private StoryEditorTouchEventHandler mStoryEditorTouchEventHandler;
+
     private TextStyleController mTextStyleController;
 
     public StoryEditorView(Context context) {
@@ -78,6 +79,23 @@ public class StoryEditorView extends ViewGroup {
 
         mTextStyleController = new TextStyleController(mEditText);
         mHideKeyboardHandler = new Handler();
+
+        StoryEditorTouchEventHandler.ViewFinder viewFinder =
+                (x, y) -> findViewUnderTouch((int) x, (int) y);
+        StoryEditorTouchEventHandler.TouchListener touchListener = new StoryEditorTouchEventHandler.TouchListener() {
+            @Override
+            public void onStickerTouch(@NonNull StickerView stickerView) {
+                if (mViewOrderController.moveToTop(stickerView)) {
+                    invalidate();
+                }
+            }
+
+            @Override
+            public void onBackgroundTouch() {
+                mHideKeyboardHandler.postDelayed(mHideKeyboardRunnable, LONG_CLICK_TIME);
+            }
+        };
+        mStoryEditorTouchEventHandler = new StoryEditorTouchEventHandler(this, viewFinder, touchListener);
     }
 
     private void initBackgroundImageView(@NonNull Context context) {
@@ -86,21 +104,25 @@ public class StoryEditorView extends ViewGroup {
                                                                         LayoutParams.WRAP_CONTENT));
         mBackgroundImageView.setAdjustViewBounds(true);
         addView(mBackgroundImageView);
+        mViewOrderController.moveToBottom(mBackgroundImageView);
     }
 
     private void initEditText(@NonNull Context context) {
         mEditText = (EditText) LayoutInflater.from(context)
                 .inflate(R.layout.story_edit_text, this, false);
-        addView(mEditText);
         ViewUtils.setEditTextGravity(mEditText, Gravity.START, Gravity.CENTER);
         mEditText.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
-                updateChildCountOnLastModifyEditText();
+                mViewOrderController.moveToTop(mEditText);
             } else {
-                mHideKeyboardRunnable.run();
+                hideKeyboard();
             }
         });
-        mEditText.setOnClickListener(v -> updateChildCountOnLastModifyEditText());
+        mEditText.setOnClickListener(v -> mViewOrderController.moveToTop(mEditText));
+
+        addView(mEditText);
+        mViewOrderController.moveToTop(mEditText);
+
         mEditText.requestFocus();
     }
 
@@ -119,17 +141,18 @@ public class StoryEditorView extends ViewGroup {
     }
 
     public void addSticker(@NonNull Bitmap bitmap) {
-        StickerView stickerView = new StickerView(getContext(), 0.5f, 0.5f);
+        StickerView stickerView = new StickerView(getContext());
         stickerView.setImageBitmap(bitmap);
 
         addView(stickerView);
+        mViewOrderController.moveToTop(stickerView);
 
         if (mStickersController == null) {
-            mStickersController = new StickersController(this);
+            mStickersController = new StickersController(this, mViewOrderController);
         }
         mStickersController.addSticker(stickerView, 0.5f, 0.5f);
 
-        mHideKeyboardRunnable.run();
+        hideKeyboard();
     }
 
     @Override
@@ -191,59 +214,34 @@ public class StoryEditorView extends ViewGroup {
 
     @Override
     protected int getChildDrawingOrder(int childCount, int i) {
-        if (i == 0) {
-            return indexOfChild(mBackgroundImageView);
+        return indexOfChild(mViewOrderController.getViewByOrder(i));
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                int x = (int) ev.getX();
+                int y = (int) ev.getY();
+                View touchedChild = findViewUnderTouch(x, y);
+                if (touchedChild instanceof EditText) {
+                    return false;
+                }
+                break;
         }
 
-        if (i == 1 && mEditText.getVisibility() != VISIBLE
-                || i == mChildCountOnLastModifyEditText - 1) {
-            return indexOfChild(mEditText);
-        }
-
-        boolean editTextWasDrawn = i > 1 && mEditText.getVisibility() != VISIBLE
-                || i > mChildCountOnLastModifyEditText - 1;
-
-        int stickerIndex = i
-                - 1 // for mBackgroundImage
-                - (editTextWasDrawn ? 1 : 0);
-
-        StickerView stickerView = mStickersController.getStickerView(stickerIndex);
-        if (stickerView == null) {
-            Log.d(TAG, "wtf? Incorrect order? " + i);
-        }
-
-        return indexOfChild(stickerView);
+        return true;
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        boolean handled = false;
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                // If there is no children for intercept
-                handled = true;
-                mHideKeyboardHandler.postDelayed(mHideKeyboardRunnable, CLICK_DOWN_TIME);
-                break;
-            case MotionEvent.ACTION_UP:
-                if (event.getEventTime() - event.getDownTime() < CLICK_DOWN_TIME) {
-                    handled = performClick();
-                    mHideKeyboardHandler.removeCallbacks(mHideKeyboardRunnable);
-                }
-                break;
-            default:
-                handled = super.onTouchEvent(event);
-                break;
-        }
-        return handled;
+        return mStoryEditorTouchEventHandler.onTouchEvent(event);
     }
 
     @Override
     public boolean performClick() {
         super.performClick();
-        mEditText.setVisibility(VISIBLE);
-        mEditText.requestFocus();
-        ViewUtils.showKeyboard(mEditText, true);
-        updateChildCountOnLastModifyEditText();
+        showKeyboard();
         return true;
     }
 
@@ -346,9 +344,7 @@ public class StoryEditorView extends ViewGroup {
                                int parentBottom) {
         StickerLayoutInfo coordinates = mStickersController.getLayoutInfo(stickerView);
         if (coordinates == null) {
-            Log.w(TAG, "wtf? StickerView is\'nt in StickersController? So, okay... Let\'s remove it");
-            removeView(stickerView);
-            mStickersController.removeSticker(stickerView);
+            Log.w(TAG, "wtf? StickerView is\'nt in StickersController?");
             return;
         }
         float stickerCenterX = (parentRight - parentLeft) * coordinates.getX();
@@ -366,7 +362,33 @@ public class StoryEditorView extends ViewGroup {
                            stickerTop + stickerHeight);
     }
 
-    private void updateChildCountOnLastModifyEditText() {
-        mChildCountOnLastModifyEditText = getChildCount();
+    private void showKeyboard() {
+        mHideKeyboardHandler.removeCallbacks(mHideKeyboardRunnable);
+
+        mEditText.setVisibility(VISIBLE);
+        mEditText.requestFocus();
+        ViewUtils.showKeyboard(mEditText, true);
+        mViewOrderController.moveToTop(mEditText);
+    }
+
+    private void hideKeyboard() {
+        ViewUtils.hideKeyboard(this);
+        mEditText.clearFocus();
+        if (TextUtils.isEmpty(mEditText.getText())) {
+            mEditText.setVisibility(INVISIBLE);
+        }
+    }
+
+    @Nullable
+    private View findViewUnderTouch(int x, int y) {
+        int childCount = getChildCount();
+        for (int i = childCount - 1; i >= 0; i--) {
+            View child = getChildAt(getChildDrawingOrder(childCount, i));
+            child.getHitRect(sRect);
+            if (sRect.contains(x, y)) {
+                return child;
+            }
+        }
+        return null;
     }
 }

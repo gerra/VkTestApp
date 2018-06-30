@@ -6,11 +6,16 @@ import android.support.annotation.Nullable;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
+import java.util.concurrent.TimeUnit;
+
 public class ViewUtils {
+    private static final long CLICK_DOWN_TIME = TimeUnit.MILLISECONDS.toMillis(150);
+
     private ViewUtils() {
         // no instance
     }
@@ -53,6 +58,11 @@ public class ViewUtils {
         if (inputManager != null) {
             inputManager.hideSoftInputFromWindow(windowTokenHolder.getWindowToken(), 0);
         }
+    }
+
+    public static boolean needToPerformClick(@NonNull MotionEvent motionEvent) {
+        return motionEvent.getAction() == MotionEvent.ACTION_UP
+                && motionEvent.getEventTime() - motionEvent.getDownTime() <= CLICK_DOWN_TIME;
     }
 
     @SuppressWarnings("WeakerAccess")

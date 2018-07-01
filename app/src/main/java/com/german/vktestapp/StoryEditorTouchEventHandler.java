@@ -3,7 +3,6 @@ package com.german.vktestapp;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.view.MotionEventCompat;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -35,6 +34,7 @@ public class StoryEditorTouchEventHandler implements ScaleGestureDetector.OnScal
                                                          this);
     }
 
+    @SuppressWarnings("deprecation")
     public boolean onTouchEvent(MotionEvent event) {
         mScaleGestureDetector.onTouchEvent(event);
 
@@ -101,7 +101,7 @@ public class StoryEditorTouchEventHandler implements ScaleGestureDetector.OnScal
             case MotionEvent.ACTION_POINTER_UP: {
                 if (pointerId == mState.mActivePointerId) {
                     int newPointerIndex = pointerIndex == 0 ? 1 : 0;
-                    Log.d(TAG, "Pointer up, New pointer index: " + newPointerIndex);
+
                     float newX = MotionEventCompat.getX(event, newPointerIndex);
                     float newY = MotionEventCompat.getY(event, newPointerIndex);
 
@@ -117,6 +117,7 @@ public class StoryEditorTouchEventHandler implements ScaleGestureDetector.OnScal
         return true;
     }
 
+    @SuppressWarnings("deprecation")
     private void onMove(@NonNull MotionEvent event, float x, float y) {
         float dx = x - mState.mLastTouchX;
         float dy = y - mState.mLastTouchY;

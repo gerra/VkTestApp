@@ -7,34 +7,50 @@ import android.view.View;
 import java.util.LinkedList;
 
 public class ViewOrderController {
-    private LinkedList<View> mOrder = new LinkedList<>();
+    @NonNull
+    private final LinkedList<View> mOrdinaryViews = new LinkedList<>();
+    @NonNull
+    private final LinkedList<View> mHighPriorityViews = new LinkedList<>();
 
     public boolean moveToBottom(@NonNull View view) {
-        if (!mOrder.isEmpty() && mOrder.getFirst() == view) {
+        if (!mOrdinaryViews.isEmpty() && mOrdinaryViews.getFirst() == view) {
             return false;
         }
-        mOrder.remove(view);
-        mOrder.addFirst(view);
+        mOrdinaryViews.remove(view);
+        mOrdinaryViews.addFirst(view);
         return true;
     }
 
     public boolean moveToTop(@NonNull View view) {
-        if (!mOrder.isEmpty() && mOrder.getLast() == view) {
+        if (!mOrdinaryViews.isEmpty() && mOrdinaryViews.getLast() == view) {
             return false;
         }
-        mOrder.remove(view);
-        mOrder.addLast(view);
+        mOrdinaryViews.remove(view);
+        mOrdinaryViews.addLast(view);
         return true;
     }
 
-    public void removeView(@NonNull View view) {
-        mOrder.remove(view);
+    public boolean moveHighPriorityViewToTop(@NonNull View view) {
+        if (!mHighPriorityViews.isEmpty() && mHighPriorityViews.getLast() == view) {
+            return false;
+        }
+        mHighPriorityViews.remove(view);
+        mHighPriorityViews.addLast(view);
+        return true;
+    }
+
+    public boolean removeView(@NonNull View view) {
+        return mOrdinaryViews.remove(view) || mHighPriorityViews.remove(view);
     }
 
     @Nullable
     public View getViewByOrder(int order) {
-        return order < mOrder.size()
-                ? mOrder.get(order)
-                : null;
+        int ordinaryViewsSize = mOrdinaryViews.size();
+        if (order < ordinaryViewsSize) {
+            return mOrdinaryViews.get(order);
+        } else if (order - ordinaryViewsSize < mHighPriorityViews.size()) {
+            return mHighPriorityViews.get(order - ordinaryViewsSize);
+        }
+        return null;
     }
 }

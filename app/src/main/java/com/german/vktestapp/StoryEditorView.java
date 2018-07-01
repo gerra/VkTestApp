@@ -4,7 +4,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Rect;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
@@ -26,6 +26,7 @@ import android.widget.ImageView;
 import com.german.vktestapp.stickers.StickerLayoutInfo;
 import com.german.vktestapp.stickers.StickersController;
 import com.german.vktestapp.utils.ViewUtils;
+import com.german.vktestapp.view.RecyclerBinView;
 import com.german.vktestapp.view.StickerView;
 
 import java.util.concurrent.TimeUnit;
@@ -34,14 +35,17 @@ import java.util.concurrent.TimeUnit;
 public class StoryEditorView extends ViewGroup
         implements StoryEditorTouchEventHandler.ViewFinder {
     private static final String TAG = "[StoryEditorView]";
+    
+    // Sticker should be not greater that MAX_STICKER_DIMENSION_RATIO of any dimension of this view
+    private static final float MAX_STICKER_DIMENSION_RATIO = 0.2f;
 
     static final long LONG_CLICK_TIME = TimeUnit.MILLISECONDS.toMillis(500);
 
-    @NonNull
-    private static final Rect sRect = new Rect();
-
     private ImageView mBackgroundImageView;
     private EditText mEditText;
+    private RecyclerBinView mRecyclerBinView;
+
+    RecycleBinState mRecyclerBinController;
 
     Handler mHideKeyboardHandler;
     final Runnable mHideKeyboardRunnable = this::hideKeyboard;
@@ -117,6 +121,16 @@ public class StoryEditorView extends ViewGroup
     }
 
     @Override
+    public void addView(View child, LayoutParams params) {
+        super.addView(child, params);
+        if (child instanceof RecyclerBinView) {
+            mRecyclerBinView = (RecyclerBinView) child;
+            mRecyclerBinController = new RecycleBinState(mRecyclerBinView);
+            mViewOrderController.moveHighPriorityViewToTop(mRecyclerBinView);
+        }
+    }
+
+    @Override
     protected void onRestoreInstanceState(Parcelable state) {
         super.onRestoreInstanceState(state);
     }
@@ -124,6 +138,18 @@ public class StoryEditorView extends ViewGroup
     @Override
     public LayoutParams generateLayoutParams(AttributeSet attrs) {
         return new MarginLayoutParams(getContext(), attrs);
+    }
+
+    @Override
+    protected boolean checkLayoutParams(LayoutParams p) {
+        return p instanceof MarginLayoutParams;
+    }
+
+    @Override
+    protected LayoutParams generateLayoutParams(LayoutParams p) {
+        return p instanceof MarginLayoutParams
+                ? p
+                : new MarginLayoutParams(p);
     }
 
     public void changeTextStyle() {
@@ -140,6 +166,7 @@ public class StoryEditorView extends ViewGroup
         if (mStickersController == null) {
             mStickersController = new StickersController(this, mViewOrderController);
         }
+        // This just added sticker, we need to save it sizes for change background in future
         mStickersController.addSticker(stickerView, 0.5f, 0.5f, getMeasuredWidth(), getMeasuredHeight());
 
         hideKeyboard();
@@ -152,39 +179,19 @@ public class StoryEditorView extends ViewGroup
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int width = MeasureSpec.getSize(widthMeasureSpec);
-        int height = MeasureSpec.getSize(heightMeasureSpec);
 
-        int backgroundWidth;
-        int backgroundHeight;
-        measureChild(mBackgroundImageView, widthMeasureSpec, heightMeasureSpec);
-        Drawable drawable = mBackgroundImageView.getDrawable();
-        if (drawable != null) {
-            int drawableWidth = drawable.getIntrinsicWidth();
-            drawableWidth = drawableWidth != -1 ? drawableWidth : width;
 
-            int drawableHeight = drawable.getIntrinsicHeight();
-            drawableHeight = drawableHeight != -1 ? drawableHeight : height;
+        Point backgroundSize = measureBackGround(widthMeasureSpec, heightMeasureSpec);
+        int backgroundWidth = backgroundSize.x;
+        int backgroundHeight = backgroundSize.y;
 
-            float widthCoef = 1.0f * width / drawableWidth;
-            float heightCoef = 1.0f * height / drawableHeight;
+        // Pass to children measured sizes of this view
+        int newWidthMeasureSpec = MeasureSpec.makeMeasureSpec(backgroundWidth, MeasureSpec.AT_MOST);
+        int newHeightMeasureSpec = MeasureSpec.makeMeasureSpec(backgroundHeight, MeasureSpec.AT_MOST);
 
-            float coef = Math.min(widthCoef, heightCoef);
-
-            backgroundWidth = Math.round(drawableWidth * coef);
-            backgroundHeight = Math.round(drawableHeight * coef);
-        } else {
-            backgroundWidth = width;
-            backgroundHeight = height;
-        }
-
-        measureChildWithMargins(mEditText,
-                                MeasureSpec.makeMeasureSpec(backgroundWidth, MeasureSpec.AT_MOST),
-                                0,
-                                MeasureSpec.makeMeasureSpec(backgroundHeight, MeasureSpec.AT_MOST),
-                                0);
-
+        measureChildWithMargins(mEditText, newWidthMeasureSpec, 0, newHeightMeasureSpec, 0);
         measureStickers(backgroundWidth, backgroundHeight);
+        measureChild(mRecyclerBinView, newWidthMeasureSpec, newHeightMeasureSpec);
 
         setMeasuredDimension(backgroundWidth, backgroundHeight);
     }
@@ -200,6 +207,7 @@ public class StoryEditorView extends ViewGroup
         layoutBackgroundImageView();
         layoutEditText(parentLeft, parentTop, parentRight, parentBottom);
         layoutStickers(parentLeft, parentTop, parentRight, parentBottom);
+        layoutRecycleBin(parentLeft, parentTop, parentRight, parentBottom);
     }
 
     @Override
@@ -236,6 +244,47 @@ public class StoryEditorView extends ViewGroup
         return true;
     }
 
+    @Override
+    public void onViewRemoved(View child) {
+        super.onViewRemoved(child);
+        if (child instanceof StickerView) {
+            mStickersController.removeSticker((StickerView) child);
+        }
+        mViewOrderController.removeView(child);
+    }
+
+    @NonNull
+    private Point measureBackGround(int widthMeasureSpec, int heightMeasureSpec) {
+        int width = MeasureSpec.getSize(widthMeasureSpec);
+        int height = MeasureSpec.getSize(heightMeasureSpec);
+
+        int backgroundWidth;
+        int backgroundHeight;
+
+        measureChild(mBackgroundImageView, widthMeasureSpec, heightMeasureSpec);
+        Drawable drawable = mBackgroundImageView.getDrawable();
+        if (drawable != null) {
+            int drawableWidth = drawable.getIntrinsicWidth();
+            drawableWidth = drawableWidth != -1 ? drawableWidth : width;
+
+            int drawableHeight = drawable.getIntrinsicHeight();
+            drawableHeight = drawableHeight != -1 ? drawableHeight : height;
+
+            float widthCoef = 1.0f * width / drawableWidth;
+            float heightCoef = 1.0f * height / drawableHeight;
+
+            float coef = Math.min(widthCoef, heightCoef);
+
+            backgroundWidth = Math.round(drawableWidth * coef);
+            backgroundHeight = Math.round(drawableHeight * coef);
+        } else {
+            backgroundWidth = width;
+            backgroundHeight = height;
+        }
+
+        return new Point(backgroundWidth, backgroundHeight);
+    }
+
     private void measureStickers(int width, int height) {
         int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
@@ -249,45 +298,47 @@ public class StoryEditorView extends ViewGroup
             boolean wasMeasured = stickerView.getMeasuredHeight() != 0
                     && stickerView.getMeasuredWidth() != 0;
             if (!wasMeasured) {
+                // At first check what size sticker wants to be
                 measureChild(stickerView,
                              MeasureSpec.makeMeasureSpec(width, MeasureSpec.UNSPECIFIED),
                              MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
-
-                // TODO: max(ratio) = 1/5
-                // This just added sticker, we need to save it sizes for change background in future
-//                float widthRatio = 1f * stickerView.getMeasuredWidth() / width;
-//                float heightRatio = 1f * stickerView.getMeasuredHeight() / height;
-//                mStickersController.setRatios(stickerView, widthRatio, heightRatio);
-//                mStickersController.setHolderBackgroundSizes(stickerView, width, height);
+                // TODO:
+                // And now check that any its dimension is not greater than 1/5 of corresponding
+                // parent dimension
+//                int stickerWidth = stickerView.getMeasuredWidth();
+//                int stickerHeight = stickerView.getMeasuredHeight();
+//                float widthRatio = 1f * stickerWidth / width;
+//                float heightRatio = 1f * stickerHeight / height;
+//                if (widthRatio > MAX_STICKER_DIMENSION_RATIO || heightRatio > MAX_STICKER_DIMENSION_RATIO) {
+//                    
+//                }
             } else {
                 StickerLayoutInfo info = mStickersController.getLayoutInfo(stickerView);
                 if (info != null) {
-                    if (!info.isTouched()) {
-                        float initialBackgroundWidth = info.getHolderBackgroundWidth();
-                        float initialBackgroundHeight = info.getHolderBackgroundHeight();
+                    float initialBackgroundWidth = info.getHolderBackgroundWidth();
+                    float initialBackgroundHeight = info.getHolderBackgroundHeight();
 
-                        float prevSelfRatioX = info.getSelfRatioX();
-                        float prevSelfRatioY = info.getSelfRatioY();
-                        float prevSelfRatio = Math.min(prevSelfRatioX, prevSelfRatioY);
+                    float prevSelfRatioX = info.getSelfRatioX();
+                    float prevSelfRatioY = info.getSelfRatioY();
+                    float prevSelfRatio = Math.min(prevSelfRatioX, prevSelfRatioY);
 
-                        float selfRatioX = width / initialBackgroundWidth;
-                        float selfRatioY = height / initialBackgroundHeight;
-                        float selfRatio = Math.min(selfRatioX, selfRatioY);
-                        info.setSelfRatios(selfRatioX, selfRatioY);
+                    float selfRatioX = width / initialBackgroundWidth;
+                    float selfRatioY = height / initialBackgroundHeight;
+                    float selfRatio = Math.min(selfRatioX, selfRatioY);
+                    info.setSelfRatios(selfRatioX, selfRatioY);
 
-                        float scaleFactor = stickerView.getScaleX() / prevSelfRatio;
-                        stickerView.setScaleX(scaleFactor * selfRatio);
-                        stickerView.setScaleY(scaleFactor * selfRatio);
+                    float scaleFactor = stickerView.getScaleX() / prevSelfRatio;
+                    stickerView.setScaleX(scaleFactor * selfRatio);
+                    stickerView.setScaleY(scaleFactor * selfRatio);
 
-                        float prevBackgroundWidth = prevSelfRatioX * initialBackgroundWidth;
-                        float prevBackgroundHeight = prevSelfRatioY * initialBackgroundHeight;
+                    float prevBackgroundWidth = prevSelfRatioX * initialBackgroundWidth;
+                    float prevBackgroundHeight = prevSelfRatioY * initialBackgroundHeight;
 
-                        float translationXRatio = width / prevBackgroundWidth;
-                        float translationYRatio = height / prevBackgroundHeight;
+                    float translationXRatio = width / prevBackgroundWidth;
+                    float translationYRatio = height / prevBackgroundHeight;
 
-                        stickerView.setTranslationX(translationXRatio * stickerView.getTranslationX());
-                        stickerView.setTranslationY(translationYRatio * stickerView.getTranslationY());
-                    }
+                    stickerView.setTranslationX(translationXRatio * stickerView.getTranslationX());
+                    stickerView.setTranslationY(translationYRatio * stickerView.getTranslationY());
                 } else {
                     Log.w(TAG, "wtf? There is no StickerView in controller?");
                 }
@@ -361,6 +412,24 @@ public class StoryEditorView extends ViewGroup
                            stickerTop + stickerHeight);
     }
 
+    private void layoutRecycleBin(int parentLeft, int parentTop, int parentRight, int parentBottom) {
+        RecyclerBinView recyclerBin = mRecyclerBinView;
+
+        int recycleBinWidth = recyclerBin.getMeasuredWidth();
+        int recycleBinHeight = recyclerBin.getMeasuredHeight();
+
+        MarginLayoutParams lp = (MarginLayoutParams) recyclerBin.getLayoutParams();
+
+        int recycleBinLeft = parentLeft + (parentRight - parentLeft - recycleBinWidth) / 2
+                + lp.leftMargin - lp.rightMargin;
+        int recycleBinTop = parentBottom - recycleBinHeight - lp.bottomMargin;
+
+        recyclerBin.layout(recycleBinLeft,
+                            recycleBinTop,
+                            recycleBinLeft + recycleBinWidth,
+                            recycleBinTop + recycleBinHeight);
+    }
+
     private void showKeyboard() {
         mHideKeyboardHandler.removeCallbacks(mHideKeyboardRunnable);
 
@@ -392,9 +461,7 @@ public class StoryEditorView extends ViewGroup
         int childCount = getChildCount();
         for (int i = childCount - 1; i >= 0; i--) {
             View child = getChildAt(getChildDrawingOrder(childCount, i));
-            child.getHitRect(sRect);
-            if (sRect.contains((int) touchX, (int) touchY)) {
-                Log.d(TAG, "findViewUnderTouch(): " + child.getClass().toString());
+            if (ViewUtils.isPointInView(child, (int) touchX, (int) touchY)) {
                 return child;
             }
         }
@@ -461,6 +528,19 @@ public class StoryEditorView extends ViewGroup
 
             stickerView.setTranslationX(stickerView.getTranslationX() + dx);
             stickerView.setTranslationY(stickerView.getTranslationY() + dy);
+
+            if (isPureMove) {
+                mRecyclerBinController.showRecycleBin(stickerView);
+                if (ViewUtils.isPointInView(mRecyclerBinView,
+                                            (int) activePointerX,
+                                            (int) activePointerY)) {
+                    mRecyclerBinController.activate();
+                } else {
+                    mRecyclerBinController.deactivate();
+                }
+            } else {
+                mRecyclerBinController.hideRecycleBin();
+            }
         }
 
         @Override
@@ -474,6 +554,15 @@ public class StoryEditorView extends ViewGroup
             // Wtf, AndroidStudio?
             //noinspection ConstantConditions
             layoutInfo.setTouched(false);
+
+            if (ViewUtils.isPointInView(mRecyclerBinView,
+                                        (int) activePointerX,
+                                        (int) activePointerY)
+                    && mRecyclerBinController.checkDelete(stickerView)) {
+                removeView(stickerView);
+            }
+
+            mRecyclerBinController.hideRecycleBin();
         }
 
         @Override
@@ -485,6 +574,39 @@ public class StoryEditorView extends ViewGroup
         @Override
         public void onStickerRotate(@NonNull StickerView stickerView) {
 
+        }
+    }
+
+    private static class RecycleBinState {
+        final RecyclerBinView mRecyclerBinView;
+
+        @Nullable
+        private View mDeletingView;
+
+        public RecycleBinState(RecyclerBinView recyclerBinView) {
+            mRecyclerBinView = recyclerBinView;
+        }
+
+        void showRecycleBin(@NonNull View deletingView) {
+            mRecyclerBinView.show();
+            mDeletingView = deletingView;
+        }
+
+        void hideRecycleBin() {
+            mRecyclerBinView.hide();
+            mDeletingView = null;
+        }
+
+        void activate() {
+            mRecyclerBinView.activate();
+        }
+
+        void deactivate() {
+            mRecyclerBinView.deactivate();
+        }
+
+        boolean checkDelete(@NonNull View deletingView) {
+            return deletingView == mDeletingView;
         }
     }
 }

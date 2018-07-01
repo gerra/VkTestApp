@@ -1,6 +1,7 @@
 package com.german.vktestapp.utils;
 
 import android.content.Context;
+import android.graphics.Rect;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.view.MotionEventCompat;
@@ -16,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ViewUtils {
     private static final long CLICK_DOWN_TIME = TimeUnit.MILLISECONDS.toMillis(150);
+    private static final Rect RECT = new Rect();
 
     private ViewUtils() {
         // no instance
@@ -64,6 +66,13 @@ public class ViewUtils {
     public static boolean needToPerformClick(@NonNull MotionEvent motionEvent) {
         return MotionEventCompat.getActionMasked(motionEvent) == MotionEvent.ACTION_UP
                 && motionEvent.getEventTime() - motionEvent.getDownTime() <= CLICK_DOWN_TIME;
+    }
+
+    public static boolean isPointInView(@NonNull View view, int pointX, int pointY) {
+        synchronized (RECT) {
+            view.getHitRect(RECT);
+            return RECT.contains(pointX, pointY);
+        }
     }
 
     @SuppressWarnings("WeakerAccess")

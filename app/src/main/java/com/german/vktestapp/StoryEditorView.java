@@ -478,7 +478,8 @@ public class StoryEditorView extends ViewGroup
 
         @Override
         public void onStickerScale(@NonNull StickerView stickerView, float scaleFactor) {
-
+            stickerView.setScaleX(stickerView.getScaleX() * scaleFactor);
+            stickerView.setScaleY(stickerView.getScaleY() * scaleFactor);
         }
 
         @Override

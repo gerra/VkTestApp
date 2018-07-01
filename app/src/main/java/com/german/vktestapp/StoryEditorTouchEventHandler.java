@@ -5,12 +5,13 @@ import android.support.annotation.Nullable;
 import android.support.v4.view.MotionEventCompat;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 
 import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.StickerView;
 
-public class StoryEditorTouchEventHandler {
+public class StoryEditorTouchEventHandler implements ScaleGestureDetector.OnScaleGestureListener {
     private static final String TAG = "[EditorTouchHandler]";
 
     @NonNull
@@ -21,6 +22,7 @@ public class StoryEditorTouchEventHandler {
     private final TouchListener mTouchListener;
 
     private final State mState = new State();
+    private final ScaleGestureDetector mScaleGestureDetector;
 
     public StoryEditorTouchEventHandler(@NonNull StoryEditorView storyEditorView,
                                         @NonNull ViewFinder viewFinder,
@@ -28,10 +30,13 @@ public class StoryEditorTouchEventHandler {
         mStoryEditorView = storyEditorView;
         mViewFinder = viewFinder;
         mTouchListener = touchListener;
+
+        mScaleGestureDetector = new ScaleGestureDetector(storyEditorView.getContext(),
+                                                         this);
     }
 
     public boolean onTouchEvent(MotionEvent event) {
-        Log.d(TAG, event.toString());
+        mScaleGestureDetector.onTouchEvent(event);
 
         int pointerIndex = MotionEventCompat.getActionIndex(event);
         int pointerId = MotionEventCompat.getPointerId(event, pointerIndex);
@@ -130,6 +135,26 @@ public class StoryEditorTouchEventHandler {
 
         mState.mLastTouchX = x;
         mState.mLastTouchY = y;
+    }
+
+    @Override
+    public boolean onScale(ScaleGestureDetector detector) {
+        float scaleFactor = detector.getScaleFactor();
+        if (mState.mActiveSticker != null) {
+            mTouchListener.onStickerScale(mState.mActiveSticker, scaleFactor);
+        }
+
+        return scaleFactor > 0.01;
+    }
+
+    @Override
+    public boolean onScaleBegin(ScaleGestureDetector detector) {
+        return mState.mActiveSticker != null;
+    }
+
+    @Override
+    public void onScaleEnd(ScaleGestureDetector detector) {
+
     }
 
     private static class State {

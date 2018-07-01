@@ -7,8 +7,8 @@ import android.support.annotation.Nullable;
 
 import com.german.vktestapp.R;
 
-public interface Background {
-    Background NONE = new Background() {
+public abstract class Background {
+    public static final Background NONE = new Background() {
         @NonNull
         @Override
         public Drawable getThumb(@NonNull Context context) {
@@ -24,8 +24,12 @@ public interface Background {
     };
 
     @NonNull
-    Drawable getThumb(@NonNull Context context);
+    public abstract Drawable getThumb(@NonNull Context context);
 
     @Nullable
-    Drawable getFull(@NonNull Context context);
+    public abstract Drawable getFull(@NonNull Context context);
+
+    public boolean isEmpty() {
+        return this == NONE;
+    }
 }

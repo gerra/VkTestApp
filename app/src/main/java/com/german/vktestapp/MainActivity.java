@@ -96,7 +96,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onBackgroundPicked(@NonNull Background background) {
-        mStoryEditorView.setBackground(background.getFull(this));
+        mStoryEditorView.setBackground(background);
     }
 
     @Override
@@ -168,6 +168,7 @@ public class MainActivity extends AppCompatActivity implements
 
         Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
         mStoryEditorView.setBackground(new BitmapDrawable(getResources(), bitmap));
+        // onBackgroundPicked will be called
         mBackgroundsAdapter.setSelectedPosition(BackgroundsAdapter.UNKNOWN_POSITION);
     }
 

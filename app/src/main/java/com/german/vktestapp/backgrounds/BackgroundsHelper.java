@@ -46,7 +46,7 @@ public class BackgroundsHelper {
         return new GradientBackground(colorFrom, colorTo);
     }
 
-    private static class GradientBackground implements Background {
+    private static class GradientBackground extends Background {
         @ColorInt
         private final int mColorFrom;
         @ColorInt
@@ -74,7 +74,7 @@ public class BackgroundsHelper {
         }
     }
 
-    private static class ResourcesBackground implements Background {
+    private static class ResourcesBackground extends Background {
         @DrawableRes
         private final int mThumbResId;
         @DrawableRes

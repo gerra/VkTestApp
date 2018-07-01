@@ -13,4 +13,6 @@
     <color name="add_background">#3d528bcc</color>
     <color name="active_background_outside_border">#528bcc</color>
     <color name="active_background_inside_border">#fff</color>
+
+    <color name="recycle_bin_ring_color">#528bcc</color>
 </resources>

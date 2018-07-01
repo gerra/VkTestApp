@@ -84,7 +84,6 @@ public class BackgroundsAdapter extends RecyclerView.Adapter<BackgroundsAdapter.
                     : null;
 
             setSelectedPosition(selectedPosition, background);
-
         }
     }
 
@@ -136,7 +135,7 @@ public class BackgroundsAdapter extends RecyclerView.Adapter<BackgroundsAdapter.
                 Drawable[] drawables = new Drawable[2];
                 drawables[0] = thumbDrawable;
                 drawables[1] = itemView.getContext().getResources()
-                        .getDrawable(R.drawable.active_background_border_2);
+                        .getDrawable(R.drawable.picked_background_border);
                 actualDrawable = new LayerDrawable(drawables);
             } else {
                 actualDrawable = thumbDrawable;

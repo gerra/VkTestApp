@@ -23,12 +23,15 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 
+import com.german.vktestapp.backgrounds.Background;
 import com.german.vktestapp.stickers.StickerLayoutInfo;
 import com.german.vktestapp.stickers.StickersController;
 import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.RecyclerBinView;
 import com.german.vktestapp.view.StickerView;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("deprecation")
@@ -56,6 +59,8 @@ public class StoryEditorView extends ViewGroup
     private StoryEditorTouchEventHandler mStoryEditorTouchEventHandler;
 
     private TextStyleController mTextStyleController;
+
+    private List<BackgroundSetListener> mBackgroundSetListeners;
 
     public StoryEditorView(Context context) {
         this(context, null);
@@ -125,6 +130,7 @@ public class StoryEditorView extends ViewGroup
         super.addView(child, params);
         if (child instanceof RecyclerBinView) {
             mRecyclerBinView = (RecyclerBinView) child;
+            addBackgroundSetListener(mRecyclerBinView);
             mRecyclerBinController = new RecycleBinState(mRecyclerBinView);
             mViewOrderController.moveHighPriorityViewToTop(mRecyclerBinView);
         }
@@ -175,6 +181,20 @@ public class StoryEditorView extends ViewGroup
     @Override
     public void setBackground(@Nullable Drawable drawable) {
         mBackgroundImageView.setImageDrawable(drawable);
+    }
+
+    public void setBackground(@NonNull Background background) {
+        setBackground(background.getFull(getContext()));
+        for (BackgroundSetListener listener : mBackgroundSetListeners) {
+            listener.onBackgroundSet(background);
+        }
+    }
+
+    public void addBackgroundSetListener(@NonNull BackgroundSetListener backgroundSetListener) {
+        if (mBackgroundSetListeners == null) {
+            mBackgroundSetListeners = new ArrayList<>();
+        }
+        mBackgroundSetListeners.add(backgroundSetListener);
     }
 
     @Override

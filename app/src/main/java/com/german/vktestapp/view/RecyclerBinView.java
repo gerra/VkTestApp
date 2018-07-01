@@ -8,9 +8,11 @@ import android.util.AttributeSet;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 
+import com.german.vktestapp.BackgroundSetListener;
 import com.german.vktestapp.R;
+import com.german.vktestapp.backgrounds.Background;
 
-public class RecyclerBinView extends FrameLayout {
+public class RecyclerBinView extends FrameLayout implements BackgroundSetListener {
     private static final int STATE_NOT_SHOWN = 0;
     private static final int STATE_SHOWN_DEACTIVATED = 1;
     private static final int STATE_SHOWN_ACTIVATED = 2;
@@ -107,5 +109,14 @@ public class RecyclerBinView extends FrameLayout {
 
     private void setImageResource(@DrawableRes int drawableRes) {
         mIconView.setImageResource(drawableRes);
+    }
+
+    @Override
+    public void onBackgroundSet(@NonNull Background background) {
+        if (!background.isEmpty()) {
+            setBackgroundResource(R.drawable.recycle_bin_background);
+        } else {
+            setBackgroundResource(R.drawable.recycle_bin_background_behind_null);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.german.vktestapp;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -29,13 +30,15 @@ import com.german.vktestapp.view.StickerView;
 
 import java.util.concurrent.TimeUnit;
 
-public class StoryEditorView extends ViewGroup {
+@SuppressWarnings("deprecation")
+public class StoryEditorView extends ViewGroup
+        implements StoryEditorTouchEventHandler.ViewFinder {
     private static final String TAG = "[StoryEditorView]";
 
     static final long LONG_CLICK_TIME = TimeUnit.MILLISECONDS.toMillis(500);
 
     @NonNull
-    private static Rect sRect = new Rect();
+    private static final Rect sRect = new Rect();
 
     private ImageView mBackgroundImageView;
     private EditText mEditText;
@@ -81,10 +84,8 @@ public class StoryEditorView extends ViewGroup {
         mTextStyleController = new TextStyleController(mEditText);
         mHideKeyboardHandler = new Handler();
 
-        StoryEditorTouchEventHandler.ViewFinder viewFinder =
-                (x, y) -> findViewUnderTouch((int) x, (int) y);
         StoryEditorTouchEventHandler.TouchListener touchListener = new TouchListenerImpl();
-        mStoryEditorTouchEventHandler = new StoryEditorTouchEventHandler(this, viewFinder, touchListener);
+        mStoryEditorTouchEventHandler = new StoryEditorTouchEventHandler(this, this, touchListener);
     }
 
     private void initBackgroundImageView(@NonNull Context context) {
@@ -139,7 +140,7 @@ public class StoryEditorView extends ViewGroup {
         if (mStickersController == null) {
             mStickersController = new StickersController(this, mViewOrderController);
         }
-        mStickersController.addSticker(stickerView, 0.5f, 0.5f);
+        mStickersController.addSticker(stickerView, 0.5f, 0.5f, getMeasuredWidth(), getMeasuredHeight());
 
         hideKeyboard();
     }
@@ -211,7 +212,7 @@ public class StoryEditorView extends ViewGroup {
         switch (MotionEventCompat.getActionMasked(event)) {
             case MotionEvent.ACTION_DOWN:
                 int x = (int) MotionEventCompat.getX(event, 0);
-                int y = (int) MotionEventCompat.getX(event, 0);
+                int y = (int) MotionEventCompat.getY(event, 0);
                 View touchedChild = findViewUnderTouch(x, y);
                 if (touchedChild instanceof EditText) {
                     return false;
@@ -222,6 +223,7 @@ public class StoryEditorView extends ViewGroup {
         return true;
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         return mStoryEditorTouchEventHandler.onTouchEvent(event);
@@ -251,32 +253,40 @@ public class StoryEditorView extends ViewGroup {
                              MeasureSpec.makeMeasureSpec(width, MeasureSpec.UNSPECIFIED),
                              MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
 
+                // TODO: max(ratio) = 1/5
                 // This just added sticker, we need to save it sizes for change background in future
-                float widthRatio = 1f * stickerView.getMeasuredWidth() / width;
-                float heightRatio = 1f * stickerView.getMeasuredHeight() / height;
-                mStickersController.setRatios(stickerView, widthRatio, heightRatio);
+//                float widthRatio = 1f * stickerView.getMeasuredWidth() / width;
+//                float heightRatio = 1f * stickerView.getMeasuredHeight() / height;
+//                mStickersController.setRatios(stickerView, widthRatio, heightRatio);
+//                mStickersController.setHolderBackgroundSizes(stickerView, width, height);
             } else {
                 StickerLayoutInfo info = mStickersController.getLayoutInfo(stickerView);
                 if (info != null) {
                     if (!info.isTouched()) {
-                        int oldStickerWidth = stickerView.getMeasuredWidth();
-                        int oldStickerHeight = stickerView.getMeasuredHeight();
+                        float initialBackgroundWidth = info.getHolderBackgroundWidth();
+                        float initialBackgroundHeight = info.getHolderBackgroundHeight();
 
-                        float oldWidthRatio = info.getWidthRatio();
-                        float oldHeightRatio = info.getHeightRatio();
+                        float prevSelfRatioX = info.getSelfRatioX();
+                        float prevSelfRatioY = info.getSelfRatioY();
+                        float prevSelfRatio = Math.min(prevSelfRatioX, prevSelfRatioY);
 
-                        float currentWidthRatio = 1f * oldStickerWidth / width;
-                        float currentHeightRatio = 1f * oldStickerHeight / height;
+                        float selfRatioX = width / initialBackgroundWidth;
+                        float selfRatioY = height / initialBackgroundHeight;
+                        float selfRatio = Math.min(selfRatioX, selfRatioY);
+                        info.setSelfRatios(selfRatioX, selfRatioY);
 
-                        float ratio = Math.min(oldWidthRatio / currentWidthRatio,
-                                               oldHeightRatio / currentHeightRatio);
+                        float scaleFactor = stickerView.getScaleX() / prevSelfRatio;
+                        stickerView.setScaleX(scaleFactor * selfRatio);
+                        stickerView.setScaleY(scaleFactor * selfRatio);
 
-                        float specWidth = oldStickerWidth * ratio;
-                        float specHeight = oldStickerHeight * ratio;
+                        float prevBackgroundWidth = prevSelfRatioX * initialBackgroundWidth;
+                        float prevBackgroundHeight = prevSelfRatioY * initialBackgroundHeight;
 
-                        measureChild(stickerView,
-                                     MeasureSpec.makeMeasureSpec(Math.round(specWidth), MeasureSpec.EXACTLY),
-                                     MeasureSpec.makeMeasureSpec(Math.round(specHeight), MeasureSpec.EXACTLY));
+                        float translationXRatio = width / prevBackgroundWidth;
+                        float translationYRatio = height / prevBackgroundHeight;
+
+                        stickerView.setTranslationX(translationXRatio * stickerView.getTranslationX());
+                        stickerView.setTranslationY(translationYRatio * stickerView.getTranslationY());
                     }
                 } else {
                     Log.w(TAG, "wtf? There is no StickerView in controller?");
@@ -368,29 +378,56 @@ public class StoryEditorView extends ViewGroup {
         }
     }
 
+    static boolean isLayoutInfoInvalid(@Nullable StickerLayoutInfo layoutInfo) {
+        if (layoutInfo == null) {
+            Log.w(TAG, "wtf? LayoutInfo is null?");
+            return true;
+        }
+        return false;
+    }
+
     @Nullable
-    private View findViewUnderTouch(int x, int y) {
+    @Override
+    public View findViewUnderTouch(float touchX, float touchY) {
         int childCount = getChildCount();
         for (int i = childCount - 1; i >= 0; i--) {
             View child = getChildAt(getChildDrawingOrder(childCount, i));
             child.getHitRect(sRect);
-            if (sRect.contains(x, y)) {
+            if (sRect.contains((int) touchX, (int) touchY)) {
+                Log.d(TAG, "findViewUnderTouch(): " + child.getClass().toString());
                 return child;
             }
         }
         return null;
     }
 
-    static boolean isLayoutInfoValid(@Nullable StickerLayoutInfo layoutInfo) {
-        if (layoutInfo == null) {
-            Log.w(TAG, "wtf? LayoutInfo is null?");
-            return false;
+    @Nullable
+    @Override
+    public StickerView findAppropriateSticker(float x1, float y1, float x2, float y2) {
+        float centerX = (x1 + x2) / 2;
+        float centerY = (y1 + y2) / 2;
+
+        StickerView appropriateStickerView = null;
+        double minDistance = Double.POSITIVE_INFINITY;
+
+        int childCount = getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View child = getChildAt(i);
+            if (child instanceof StickerView) {
+                StickerView stickerView = ((StickerView) child);
+                double distance = Math.hypot(stickerView.getPivotX() - centerX,
+                                             stickerView.getPivotY() - centerY);
+                if (appropriateStickerView == null || distance < minDistance) {
+                    appropriateStickerView = stickerView;
+                    minDistance = distance;
+                }
+            }
         }
-        return true;
+
+        return appropriateStickerView;
     }
 
     private class TouchListenerImpl implements StoryEditorTouchEventHandler.TouchListener {
-
         @Override
         public void onStickerTouchDown(@NonNull StickerView stickerView) {
             if (mViewOrderController.moveToTop(stickerView)) {
@@ -398,10 +435,12 @@ public class StoryEditorView extends ViewGroup {
             }
 
             StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
-            if (!isLayoutInfoValid(layoutInfo)) {
+            if (isLayoutInfoInvalid(layoutInfo)) {
                 return;
             }
 
+            // Wtf, AndroidStudio?
+            //noinspection ConstantConditions
             layoutInfo.setTouched(true);
         }
 
@@ -415,34 +454,30 @@ public class StoryEditorView extends ViewGroup {
                                   boolean isPureMove,
                                   float activePointerX, float activePointerY,
                                   float dx, float dy) {
-            float deltaPercentageX = dx / getMeasuredWidth();
-            float deltaPercentageY = dy / getMeasuredHeight();
-
             StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
-            if (!isLayoutInfoValid(layoutInfo)) {
+            if (isLayoutInfoInvalid(layoutInfo)) {
                 return;
             }
 
-            layoutInfo.setX(layoutInfo.getX() + deltaPercentageX);
-            layoutInfo.setY(layoutInfo.getY() + deltaPercentageY);
-
-            // TODO: may be use translations and invalidate?
-            requestLayout();
+            stickerView.setTranslationX(stickerView.getTranslationX() + dx);
+            stickerView.setTranslationY(stickerView.getTranslationY() + dy);
         }
 
         @Override
         public void onStickerStopMove(@NonNull StickerView stickerView,
                                       float activePointerX, float activePointerY) {
             StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
-            if (!isLayoutInfoValid(layoutInfo)) {
+            if (isLayoutInfoInvalid(layoutInfo)) {
                 return;
             }
 
+            // Wtf, AndroidStudio?
+            //noinspection ConstantConditions
             layoutInfo.setTouched(false);
         }
 
         @Override
-        public void onStickerScale(@NonNull StickerView stickerView) {
+        public void onStickerScale(@NonNull StickerView stickerView, float scaleFactor) {
 
         }
 

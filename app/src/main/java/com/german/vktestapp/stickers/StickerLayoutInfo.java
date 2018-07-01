@@ -4,8 +4,10 @@ public class StickerLayoutInfo {
     // Percentage relative to parent
     private float mX;
     private float mY;
-    private float mWidthRatio;
-    private float mHeightRatio;
+    private int mHolderBackgroundWidth;
+    private int mHolderBackgroundHeight;
+    private float mSelfRatioX = 1f;
+    private float mSelfRatioY = 1f;
 
     private boolean mIsTouched;
 
@@ -14,43 +16,54 @@ public class StickerLayoutInfo {
         mY = y;
     }
 
-    public float getX() {
-        return mX;
+    public void setCenter(float x, float y) {
+        mX = x;
+        mY = y;
     }
 
-    public void setX(float x) {
-        mX = x;
+    public float getX() {
+        return mX;
     }
 
     public float getY() {
         return mY;
     }
 
-    public void setY(float y) {
-        mY = y;
+    public int getHolderBackgroundWidth() {
+        return mHolderBackgroundWidth;
     }
 
-    public float getWidthRatio() {
-        return mWidthRatio;
+    public void setHolderBackgroundSizes(int holderBackgroundWidth, int holderBackgroundHeight) {
+        mHolderBackgroundWidth = holderBackgroundWidth;
+        mHolderBackgroundHeight = holderBackgroundHeight;
     }
 
-    public void setWidthRatio(float widthRatio) {
-        mWidthRatio = widthRatio;
+    public int getHolderBackgroundHeight() {
+        return mHolderBackgroundHeight;
     }
 
-    public float getHeightRatio() {
-        return mHeightRatio;
+    public void setHolderBackgroundHeight(int holderBackgroundHeight) {
+        mHolderBackgroundHeight = holderBackgroundHeight;
     }
 
-    public void setHeightRatio(float heightRatio) {
-        mHeightRatio = heightRatio;
+    public void setSelfRatios(float selfRatioX, float selfRatioY) {
+        mSelfRatioX = selfRatioX;
+        mSelfRatioY = selfRatioY;
     }
 
-    public boolean isTouched() {
-        return mIsTouched;
+    public float getSelfRatioX() {
+        return mSelfRatioX;
+    }
+
+    public float getSelfRatioY() {
+        return mSelfRatioY;
     }
 
     public void setTouched(boolean touched) {
         mIsTouched = touched;
+    }
+
+    public boolean isTouched() {
+        return mIsTouched;
     }
 }

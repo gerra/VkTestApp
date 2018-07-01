@@ -2,7 +2,6 @@ package com.german.vktestapp.stickers;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.View;
 
 import com.german.vktestapp.ViewOrderController;
@@ -26,14 +25,22 @@ public class StickersController {
         mViewOrderController = viewOrderController;
     }
 
-    public void addSticker(@NonNull StickerView stickerView, float centerX, float centerY) {
+    @NonNull
+    public StickerLayoutInfo addSticker(@NonNull StickerView stickerView,
+                                        float centerX,
+                                        float centerY,
+                                        int holderWidth,
+                                        int holderHeight) {
         StickerLayoutInfo stickerLayoutInfo = new StickerLayoutInfo(centerX, centerY);
+        stickerLayoutInfo.setHolderBackgroundSizes(holderWidth, holderHeight);
         mCoordinates.put(stickerView, stickerLayoutInfo);
 
         stickerView.setOnTouchListener(new StickerTouchListener(stickerLayoutInfo,
                                                                 mParent,
                                                                 this::moveToTop));
         stickerView.setOnClickListener(this::moveToTop);
+
+        return stickerLayoutInfo;
     }
 
     public void removeSticker(@NonNull StickerView stickerView) {
@@ -43,16 +50,6 @@ public class StickersController {
     @Nullable
     public StickerLayoutInfo getLayoutInfo(@NonNull StickerView stickerView) {
         return mCoordinates.get(stickerView);
-    }
-
-    public void setRatios(@NonNull StickerView stickerView, float widthRatio, float heightRatio) {
-        StickerLayoutInfo info = mCoordinates.get(stickerView);
-        if (info == null) {
-            Log.w(TAG, "wtf? There is no this sticker?");
-            return;
-        }
-        info.setWidthRatio(widthRatio);
-        info.setHeightRatio(heightRatio);
     }
 
     private void moveToTop(@NonNull View view) {

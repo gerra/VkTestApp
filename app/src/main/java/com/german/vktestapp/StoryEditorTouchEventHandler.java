@@ -40,9 +40,10 @@ public class StoryEditorTouchEventHandler {
 
         switch (MotionEventCompat.getActionMasked(event)) {
             case MotionEvent.ACTION_DOWN: {
-                View touchedView = mViewFinder.findView(x, y);
+                View touchedView = mViewFinder.findViewUnderTouch(x, y);
                 if (!(touchedView instanceof StickerView)) {
                     // If it's not Sticker, it's background
+                    // (we don't intercept touch event for EditText)
                     mTouchListener.onBackgroundTouchDown();
                 } else {
                     mState.mActiveSticker = (StickerView) touchedView;
@@ -51,13 +52,18 @@ public class StoryEditorTouchEventHandler {
                 }
 
                 mState.mActivePointerId = pointerId;
-                mState.mLastTouchX = x;
-                mState.mLastTouchY = y;
+                mState.setFirstTouchX(x, y);
+                mState.setLastTouch(x, y);
 
                 break;
             }
             case MotionEvent.ACTION_POINTER_DOWN: {
-
+                if (pointerIndex == 1) {
+                    if (mState.mActiveSticker == null) {
+                        mState.mActiveSticker = mViewFinder.findAppropriateSticker(mState.mFirstTouchX, mState.mFirstTouchY,
+                                                                                   x, y);
+                    }
+                }
                 break;
             }
             case MotionEvent.ACTION_MOVE: {
@@ -128,11 +134,23 @@ public class StoryEditorTouchEventHandler {
 
     private static class State {
         int mActivePointerId;
+        float mFirstTouchX;
+        float mFirstTouchY;
         float mLastTouchX;
         float mLastTouchY;
         boolean mFirstDownWasOnSticker;
         @Nullable
         StickerView mActiveSticker;
+
+        void setFirstTouchX(float x, float y) {
+            mFirstTouchX = x;
+            mFirstTouchY = y;
+        }
+
+        void setLastTouch(float x, float y) {
+            mLastTouchX = x;
+            mLastTouchY = y;
+        }
 
         void reset() {
             mActivePointerId = MotionEvent.INVALID_POINTER_ID;
@@ -143,7 +161,9 @@ public class StoryEditorTouchEventHandler {
 
     interface ViewFinder {
         @Nullable
-        View findView(float touchX, float touchY);
+        View findViewUnderTouch(float touchX, float touchY);
+        @Nullable
+        StickerView findAppropriateSticker(float x1, float y1, float x2, float y2);
     }
 
     interface TouchListener {
@@ -156,7 +176,7 @@ public class StoryEditorTouchEventHandler {
                            float dx, float dy);
         void onStickerStopMove(@NonNull StickerView stickerView,
                                float activePointerX, float activePointerY);
-        void onStickerScale(@NonNull StickerView stickerView);
+        void onStickerScale(@NonNull StickerView stickerView, float scaleFactor);
         void onStickerRotate(@NonNull StickerView stickerView);
     }
 }

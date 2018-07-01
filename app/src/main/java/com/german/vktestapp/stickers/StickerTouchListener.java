@@ -79,8 +79,8 @@ public class StickerTouchListener implements View.OnTouchListener, ScaleGestureD
                 float deltaPercentageX = deltaX / mParent.getMeasuredWidth();
                 float deltaPercentageY = deltaY / mParent.getMeasuredHeight();
 
-                mLayoutInfo.setX(mLayoutInfo.getX() + deltaPercentageX);
-                mLayoutInfo.setY(mLayoutInfo.getY() + deltaPercentageY);
+                mLayoutInfo.setCenter(mLayoutInfo.getX() + deltaPercentageX,
+                                      mLayoutInfo.getY() + deltaPercentageY);
 
 //                v.setTranslationX(deltaX + v.getTranslationX());
 //                v.setTranslationY(deltaY + v.getTranslationY());

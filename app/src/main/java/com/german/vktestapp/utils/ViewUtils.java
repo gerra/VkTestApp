@@ -3,6 +3,7 @@ package com.german.vktestapp.utils;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.view.MotionEventCompat;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -61,7 +62,7 @@ public class ViewUtils {
     }
 
     public static boolean needToPerformClick(@NonNull MotionEvent motionEvent) {
-        return motionEvent.getAction() == MotionEvent.ACTION_UP
+        return MotionEventCompat.getActionMasked(motionEvent) == MotionEvent.ACTION_UP
                 && motionEvent.getEventTime() - motionEvent.getDownTime() <= CLICK_DOWN_TIME;
     }
 

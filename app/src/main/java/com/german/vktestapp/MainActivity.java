@@ -31,8 +31,12 @@ import com.german.vktestapp.stickerpicker.StickerPickerDialogFragment;
 import com.german.vktestapp.utils.PermissionsUtils;
 import com.german.vktestapp.utils.Utils;
 
-// TODO: save selected item
-// TODO: only portrait
+// TODO: change text style
+// TODO: save state
+// TODO: save
+// TODO: only portrait?
+// TODO: nice background picker?
+// TODO: fix sticker picker?
 public class MainActivity extends AppCompatActivity implements
         StoryView, StickerPickListener, BackgroundPickListener, AddBackgroundClickListener {
     private static final String TAG = "[MainActivity]";

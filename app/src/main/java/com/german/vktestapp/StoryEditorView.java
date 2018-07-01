@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.view.MotionEventCompat;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -43,7 +44,7 @@ public class StoryEditorView extends ViewGroup {
     final Runnable mHideKeyboardRunnable = this::hideKeyboard;
 
     final ViewOrderController mViewOrderController = new ViewOrderController();
-    private StickersController mStickersController;
+    StickersController mStickersController;
 
     private StoryEditorTouchEventHandler mStoryEditorTouchEventHandler;
 
@@ -82,19 +83,7 @@ public class StoryEditorView extends ViewGroup {
 
         StoryEditorTouchEventHandler.ViewFinder viewFinder =
                 (x, y) -> findViewUnderTouch((int) x, (int) y);
-        StoryEditorTouchEventHandler.TouchListener touchListener = new StoryEditorTouchEventHandler.TouchListener() {
-            @Override
-            public void onStickerTouch(@NonNull StickerView stickerView) {
-                if (mViewOrderController.moveToTop(stickerView)) {
-                    invalidate();
-                }
-            }
-
-            @Override
-            public void onBackgroundTouch() {
-                mHideKeyboardHandler.postDelayed(mHideKeyboardRunnable, LONG_CLICK_TIME);
-            }
-        };
+        StoryEditorTouchEventHandler.TouchListener touchListener = new TouchListenerImpl();
         mStoryEditorTouchEventHandler = new StoryEditorTouchEventHandler(this, viewFinder, touchListener);
     }
 
@@ -218,11 +207,11 @@ public class StoryEditorView extends ViewGroup {
     }
 
     @Override
-    public boolean onInterceptTouchEvent(MotionEvent ev) {
-        switch (ev.getAction()) {
+    public boolean onInterceptTouchEvent(MotionEvent event) {
+        switch (MotionEventCompat.getActionMasked(event)) {
             case MotionEvent.ACTION_DOWN:
-                int x = (int) ev.getX();
-                int y = (int) ev.getY();
+                int x = (int) MotionEventCompat.getX(event, 0);
+                int y = (int) MotionEventCompat.getX(event, 0);
                 View touchedChild = findViewUnderTouch(x, y);
                 if (touchedChild instanceof EditText) {
                     return false;
@@ -390,5 +379,76 @@ public class StoryEditorView extends ViewGroup {
             }
         }
         return null;
+    }
+
+    static boolean isLayoutInfoValid(@Nullable StickerLayoutInfo layoutInfo) {
+        if (layoutInfo == null) {
+            Log.w(TAG, "wtf? LayoutInfo is null?");
+            return false;
+        }
+        return true;
+    }
+
+    private class TouchListenerImpl implements StoryEditorTouchEventHandler.TouchListener {
+
+        @Override
+        public void onStickerTouchDown(@NonNull StickerView stickerView) {
+            if (mViewOrderController.moveToTop(stickerView)) {
+                invalidate();
+            }
+
+            StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
+            if (!isLayoutInfoValid(layoutInfo)) {
+                return;
+            }
+
+            layoutInfo.setTouched(true);
+        }
+
+        @Override
+        public void onBackgroundTouchDown() {
+            mHideKeyboardHandler.postDelayed(mHideKeyboardRunnable, LONG_CLICK_TIME);
+        }
+
+        @Override
+        public void onStickerMove(@NonNull StickerView stickerView,
+                                  boolean isPureMove,
+                                  float activePointerX, float activePointerY,
+                                  float dx, float dy) {
+            float deltaPercentageX = dx / getMeasuredWidth();
+            float deltaPercentageY = dy / getMeasuredHeight();
+
+            StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
+            if (!isLayoutInfoValid(layoutInfo)) {
+                return;
+            }
+
+            layoutInfo.setX(layoutInfo.getX() + deltaPercentageX);
+            layoutInfo.setY(layoutInfo.getY() + deltaPercentageY);
+
+            // TODO: may be use translations and invalidate?
+            requestLayout();
+        }
+
+        @Override
+        public void onStickerStopMove(@NonNull StickerView stickerView,
+                                      float activePointerX, float activePointerY) {
+            StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
+            if (!isLayoutInfoValid(layoutInfo)) {
+                return;
+            }
+
+            layoutInfo.setTouched(false);
+        }
+
+        @Override
+        public void onStickerScale(@NonNull StickerView stickerView) {
+
+        }
+
+        @Override
+        public void onStickerRotate(@NonNull StickerView stickerView) {
+
+        }
     }
 }

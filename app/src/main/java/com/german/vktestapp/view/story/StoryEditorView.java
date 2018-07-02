@@ -5,6 +5,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
@@ -43,6 +44,8 @@ import java.util.concurrent.TimeUnit;
 public class StoryEditorView extends ViewGroup
         implements StoryEditorTouchEventHandler.ViewFinder, EditTextProvider {
     private static final String TAG = "[StoryEditorView]";
+
+    private static final Rect HIT_RECT = new Rect();
     
     // Sticker should be not greater that MAX_STICKER_DIMENSION_RATIO of any dimension of this view
     private static final float MAX_STICKER_DIMENSION_RATIO = 0.2f;
@@ -390,6 +393,9 @@ public class StoryEditorView extends ViewGroup
 
                     stickerView.setTranslationX(translationXRatio * stickerView.getTranslationX());
                     stickerView.setTranslationY(translationYRatio * stickerView.getTranslationY());
+
+                    stickerView.setPivotX(translationXRatio * stickerView.getPivotX());
+                    stickerView.setPivotY(translationYRatio * stickerView.getPivotY());
                 } else {
                     Log.w(TAG, "wtf? There is no StickerView in controller?");
                 }
@@ -536,8 +542,9 @@ public class StoryEditorView extends ViewGroup
             View child = getChildAt(i);
             if (child instanceof StickerView) {
                 StickerView stickerView = ((StickerView) child);
-                double distance = Math.hypot(stickerView.getPivotX() - centerX,
-                                             stickerView.getPivotY() - centerY);
+                stickerView.getHitRect(HIT_RECT);
+                double distance = Math.hypot(HIT_RECT.centerX() - centerX,
+                                             HIT_RECT.centerY() - centerY);
                 if (appropriateStickerView == null || distance < minDistance) {
                     appropriateStickerView = stickerView;
                     minDistance = distance;
@@ -599,7 +606,7 @@ public class StoryEditorView extends ViewGroup
         @Override
         public void onStickerMove(@NonNull StickerView stickerView,
                                   boolean isPureMove,
-                                  float activePointerX, float activePointerY,
+                                  float movePointX, float movePointY,
                                   float dx, float dy) {
             StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
             if (isLayoutInfoInvalid(layoutInfo)) {
@@ -612,8 +619,8 @@ public class StoryEditorView extends ViewGroup
             if (isPureMove) {
                 mRecyclerBinController.showRecycleBin(stickerView);
                 if (ViewUtils.isPointInView(mRecyclerBinView,
-                                            (int) activePointerX,
-                                            (int) activePointerY)) {
+                                            (int) movePointX,
+                                            (int) movePointY)) {
                     if (!mRecyclerBinController.isActive()) {
                         if (mActivateRecycleBinEffect != null) {
                             mActivateRecycleBinEffect.playEffectOnActivate(getContext());
@@ -630,10 +637,11 @@ public class StoryEditorView extends ViewGroup
 
         @Override
         public void onStickerStopMove(@NonNull StickerView stickerView,
-                                      float activePointerX, float activePointerY) {
-            if (ViewUtils.isPointInView(mRecyclerBinView,
-                                        (int) activePointerX,
-                                        (int) activePointerY)
+                                      boolean isPureMove,
+                                      float movePointX, float movePointY) {
+            if (isPureMove && ViewUtils.isPointInView(mRecyclerBinView,
+                                        (int) movePointX,
+                                        (int) movePointY)
                     && mRecyclerBinController.checkDelete(stickerView)) {
                 removeView(stickerView);
             }
@@ -642,7 +650,20 @@ public class StoryEditorView extends ViewGroup
         }
 
         @Override
-        public void onStickerScale(@NonNull StickerView stickerView, float scaleFactor) {
+        public void onStickerScale(@NonNull StickerView stickerView,
+                                   float focusX, float focusY,
+                                   float scaleFactor) {
+            Log.d(TAG, "scaleFactor=" + scaleFactor);
+
+            float newPivotX = focusX - stickerView.getLeft();
+            float newPivotY = focusY - stickerView.getTop();
+
+//            Log.d(TAG, (stickerView.getPivotX() - newPivotX) / stickerView.getScaleX() + " "
+//                    + (stickerView.getPivotY() - newPivotY) / stickerView.getScaleY());
+
+            stickerView.setPivotX(newPivotX);
+            stickerView.setPivotY(newPivotY);
+
             stickerView.setScaleX(stickerView.getScaleX() * scaleFactor);
             stickerView.setScaleY(stickerView.getScaleY() * scaleFactor);
         }

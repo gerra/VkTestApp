@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -39,6 +40,7 @@ import com.german.vktestapp.view.StickerView;
 import com.german.vktestapp.view.story.StoryEditorView;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -67,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private StoryEditorView mStoryEditorView;
     private InteractStickerListener mInteractStickerListener;
+    private TextStyleController mTextStyleController;
 
     private BackgroundsAdapter mBackgroundsAdapter;
 
@@ -98,6 +101,16 @@ public class MainActivity extends AppCompatActivity implements
         mStoryEditorView = findViewById(R.id.story_editor_view);
         mStoryEditorView.setActivateRecycleBinEffect(new VibrateEffect());
 
+
+        Resources resources = getResources();
+        TextStyleController.Style defaultStyle = new TextStyleController.Style(resources.getColor(R.color.text_style_background_color_0),
+                                                                             resources.getColor(R.color.text_style_text_color_0));
+        TextStyleController.Style firstStyle = new TextStyleController.Style(resources.getColor(R.color.text_style_background_color_1),
+                                                                             resources.getColor(R.color.text_style_text_color_1));
+        TextStyleController.Style secondStyle = new TextStyleController.Style(resources.getColor(R.color.text_style_background_color_2),
+                                                                              resources.getColor(R.color.text_style_text_color_2));
+        mTextStyleController = new TextStyleController(Arrays.asList(defaultStyle, firstStyle, secondStyle));
+
         setActionBar();
         int selectedPosition = savedInstanceState != null
                 ? savedInstanceState.getInt(KEY_SELECTED_POSITION, BackgroundsAdapter.UNKNOWN_POSITION)
@@ -119,6 +132,8 @@ public class MainActivity extends AppCompatActivity implements
         super.onStart();
         mStoryPresenter.attachView(this);
         mStoryEditorView.addInteractStickerListener(mInteractStickerListener);
+        mTextStyleController.addEditTextProvider(mStoryEditorView);
+        mStoryEditorView.addBackgroundSetListener(mTextStyleController);
     }
 
     private void setActionBar() {
@@ -131,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements
         actionBarView.findViewById(R.id.show_sticker_picker)
                 .setOnClickListener(v -> new StickerPickerDialogFragment().show(getSupportFragmentManager(), null));
         actionBarView.findViewById(R.id.change_text_style)
-                .setOnClickListener(v -> mStoryEditorView.changeTextStyle());
+                .setOnClickListener(v -> mTextStyleController.toggle());
     }
 
     private void setBackgroundsPanel(int selectedPosition) {
@@ -207,6 +222,8 @@ public class MainActivity extends AppCompatActivity implements
         super.onStop();
         mStoryPresenter.detachView();
         mStoryEditorView.removeInteractStickerListener(mInteractStickerListener);
+        mTextStyleController.removeEditTextProvider(mStoryEditorView);
+        mStoryEditorView.removeBackgroundSetListener(mTextStyleController);
     }
 
     @Override

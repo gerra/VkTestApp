@@ -26,9 +26,9 @@ import android.widget.ImageView;
 
 import com.german.vktestapp.ActivateRecycleBinEffect;
 import com.german.vktestapp.BackgroundSetListener;
+import com.german.vktestapp.EditTextProvider;
 import com.german.vktestapp.InteractStickerListener;
 import com.german.vktestapp.R;
-import com.german.vktestapp.TextStyleController;
 import com.german.vktestapp.backgrounds.Background;
 import com.german.vktestapp.stickers.StickerLayoutInfo;
 import com.german.vktestapp.utils.ViewUtils;
@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("deprecation")
 public class StoryEditorView extends ViewGroup
-        implements StoryEditorTouchEventHandler.ViewFinder {
+        implements StoryEditorTouchEventHandler.ViewFinder, EditTextProvider {
     private static final String TAG = "[StoryEditorView]";
     
     // Sticker should be not greater that MAX_STICKER_DIMENSION_RATIO of any dimension of this view
@@ -49,6 +49,7 @@ public class StoryEditorView extends ViewGroup
 
     static final long LONG_CLICK_TIME = TimeUnit.MILLISECONDS.toMillis(500);
 
+    private Background mBackground;
     private ImageView mBackgroundImageView;
     private EditText mEditText;
     RecyclerBinView mRecyclerBinView;
@@ -62,8 +63,6 @@ public class StoryEditorView extends ViewGroup
     StickersController mStickersController;
 
     private StoryEditorTouchEventHandler mTouchEventHandler;
-
-    private TextStyleController mTextStyleController;
 
     private Collection<BackgroundSetListener> mBackgroundSetListeners;
     Collection<InteractStickerListener> mInteractStickerListeners;
@@ -98,7 +97,6 @@ public class StoryEditorView extends ViewGroup
         initBackgroundImageView(context);
         initEditText(context);
 
-        mTextStyleController = new TextStyleController(mEditText);
         mHideKeyboardHandler = new Handler();
 
         StoryEditorTouchEventHandler.TouchListener touchListener = new TouchListenerImpl();
@@ -170,10 +168,6 @@ public class StoryEditorView extends ViewGroup
                 : new MarginLayoutParams(p);
     }
 
-    public void changeTextStyle() {
-        mTextStyleController.toggle();
-    }
-
     public void addSticker(@NonNull Bitmap bitmap) {
         StickerView stickerView = new StickerView(getContext());
         stickerView.setImageBitmap(bitmap);
@@ -196,9 +190,11 @@ public class StoryEditorView extends ViewGroup
     }
 
     public void setBackground(@NonNull Background background) {
-        setBackground(background.getFull(getContext()));
+        mBackground = background;
+
+        setBackground(mBackground.getFull(getContext()));
         for (BackgroundSetListener listener : mBackgroundSetListeners) {
-            listener.onBackgroundSet(background);
+            listener.onBackgroundSet(mBackground);
         }
     }
 
@@ -207,6 +203,9 @@ public class StoryEditorView extends ViewGroup
             mBackgroundSetListeners = new HashSet<>();
         }
         mBackgroundSetListeners.add(listener);
+        if (mBackground != null) {
+            listener.onBackgroundSet(mBackground);
+        }
     }
 
     public void removeBackgroundSetListener(@NonNull BackgroundSetListener listener) {
@@ -583,6 +582,12 @@ public class StoryEditorView extends ViewGroup
         mRecyclerBinView.setVisibility(recycleBinVisibility);
 
         return bitmap;
+    }
+
+    @Nullable
+    @Override
+    public EditText getEditText() {
+        return mEditText;
     }
 
     private class TouchListenerImpl implements StoryEditorTouchEventHandler.TouchListener {

@@ -16,6 +16,7 @@
 
     <style name="StoryEditTextStyle" parent="Widget.AppCompat.EditText">
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/text_style_text_color_0</item>
         <item name="android:textSize">32sp</item>
         <item name="android:hint">@string/story_edit_text_hint</item>
         <item name="android:background">@android:color/transparent</item>

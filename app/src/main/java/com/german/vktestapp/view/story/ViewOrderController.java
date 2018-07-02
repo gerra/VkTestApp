@@ -1,4 +1,4 @@
-package com.german.vktestapp;
+package com.german.vktestapp.view.story;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;

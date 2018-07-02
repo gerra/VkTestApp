@@ -1,4 +1,4 @@
-package com.german.vktestapp;
+package com.german.vktestapp.view.story;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -7,6 +7,7 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 
+import com.german.vktestapp.InteractStickerListener;
 import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.StickerView;
 

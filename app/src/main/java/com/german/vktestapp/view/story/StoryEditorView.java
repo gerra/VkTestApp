@@ -1,4 +1,4 @@
-package com.german.vktestapp;
+package com.german.vktestapp.view.story;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -24,9 +24,13 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 
+import com.german.vktestapp.ActivateRecycleBinEffect;
+import com.german.vktestapp.BackgroundSetListener;
+import com.german.vktestapp.InteractStickerListener;
+import com.german.vktestapp.R;
+import com.german.vktestapp.TextStyleController;
 import com.german.vktestapp.backgrounds.Background;
 import com.german.vktestapp.stickers.StickerLayoutInfo;
-import com.german.vktestapp.stickers.StickersController;
 import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.RecyclerBinView;
 import com.german.vktestapp.view.StickerView;
@@ -57,7 +61,7 @@ public class StoryEditorView extends ViewGroup
     final ViewOrderController mViewOrderController = new ViewOrderController();
     StickersController mStickersController;
 
-    private StoryEditorTouchEventHandler mStoryEditorTouchEventHandler;
+    private StoryEditorTouchEventHandler mTouchEventHandler;
 
     private TextStyleController mTextStyleController;
 
@@ -98,7 +102,7 @@ public class StoryEditorView extends ViewGroup
         mHideKeyboardHandler = new Handler();
 
         StoryEditorTouchEventHandler.TouchListener touchListener = new TouchListenerImpl();
-        mStoryEditorTouchEventHandler = new StoryEditorTouchEventHandler(this, this, touchListener);
+        mTouchEventHandler = new StoryEditorTouchEventHandler(this, this, touchListener);
     }
 
     private void initBackgroundImageView(@NonNull Context context) {
@@ -279,7 +283,7 @@ public class StoryEditorView extends ViewGroup
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        return mStoryEditorTouchEventHandler.onTouchEvent(event);
+        return mTouchEventHandler.onTouchEvent(event);
     }
 
     @Override

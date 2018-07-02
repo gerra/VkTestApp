@@ -36,6 +36,7 @@ import com.german.vktestapp.stickerpicker.StickerPickerDialogFragment;
 import com.german.vktestapp.utils.PermissionsUtils;
 import com.german.vktestapp.utils.Utils;
 import com.german.vktestapp.view.StickerView;
+import com.german.vktestapp.view.story.StoryEditorView;
 
 import java.io.File;
 import java.util.HashSet;

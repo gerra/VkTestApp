@@ -32,6 +32,7 @@ import com.german.vktestapp.backgrounds.Background;
 import com.german.vktestapp.backgrounds.BackgroundPickListener;
 import com.german.vktestapp.backgrounds.BackgroundsAdapter;
 import com.german.vktestapp.backgrounds.BackgroundsHelper;
+import com.german.vktestapp.backgrounds.SimpleBackground;
 import com.german.vktestapp.stickerpicker.StickerPickListener;
 import com.german.vktestapp.stickerpicker.StickerPickerDialogFragment;
 import com.german.vktestapp.utils.PermissionsUtils;
@@ -264,8 +265,11 @@ public class MainActivity extends AppCompatActivity implements
             Utils.close(cursor);
         }
 
-        Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
-        mStoryEditorView.setBackground(new BitmapDrawable(getResources(), bitmap));
+        BitmapFactory.Options o = new BitmapFactory.Options();
+        o.inSampleSize = 4;
+        Bitmap bitmap = BitmapFactory.decodeFile(imagePath, o);
+        Background background = new SimpleBackground(new BitmapDrawable(getResources(), bitmap));
+        mStoryEditorView.setBackground(background);
         // onBackgroundPicked will be called
         mBackgroundsAdapter.setSelectedPosition(BackgroundsAdapter.UNKNOWN_POSITION);
     }

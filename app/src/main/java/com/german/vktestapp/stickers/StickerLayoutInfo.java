@@ -11,11 +11,6 @@ public class StickerLayoutInfo {
 
     private boolean mIsTouched;
 
-    public StickerLayoutInfo(float x, float y) {
-        mX = x;
-        mY = y;
-    }
-
     public void setCenter(float x, float y) {
         mX = x;
         mY = y;

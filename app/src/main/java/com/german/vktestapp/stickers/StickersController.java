@@ -27,17 +27,11 @@ public class StickersController {
 
     @NonNull
     public StickerLayoutInfo addSticker(@NonNull StickerView stickerView,
-                                        float centerX,
-                                        float centerY,
                                         int holderWidth,
                                         int holderHeight) {
-        StickerLayoutInfo stickerLayoutInfo = new StickerLayoutInfo(centerX, centerY);
+        StickerLayoutInfo stickerLayoutInfo = new StickerLayoutInfo();
         stickerLayoutInfo.setHolderBackgroundSizes(holderWidth, holderHeight);
         mCoordinates.put(stickerView, stickerLayoutInfo);
-
-        stickerView.setOnTouchListener(new StickerTouchListener(stickerLayoutInfo,
-                                                                mParent,
-                                                                this::moveToTop));
         stickerView.setOnClickListener(this::moveToTop);
 
         return stickerLayoutInfo;

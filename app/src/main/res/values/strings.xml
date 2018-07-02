@@ -5,4 +5,6 @@
     <string name="stickers_title">Stickers</string>
     <string name="save_story">Save</string>
     <string name="story_edit_text_hint">What\'s new?</string>
+    <string name="story_save_complete">Story was saved</string>
+    <string name="story_save_error">Story save error</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.german.vktestapp.backgrounds;
 
 import android.content.Context;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -16,10 +17,10 @@ public abstract class Background {
                     .getDrawable(R.drawable.none_background_drawable);
         }
 
-        @Nullable
+        @NonNull
         @Override
         public Drawable getFull(@NonNull Context context) {
-            return null;
+            return new ColorDrawable(context.getResources().getColor(R.color.color_primary));
         }
     };
 

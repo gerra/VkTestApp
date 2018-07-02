@@ -53,7 +53,7 @@ public class StoryEditorTouchEventHandler implements ScaleGestureDetector.OnScal
                 } else {
                     mState.mActiveSticker = (StickerView) touchedView;
                     mState.mFirstDownWasOnSticker = true;
-                    mTouchListener.onStickerTouchDown(mState.mActiveSticker);
+                    mTouchListener.onStartInteract(mState.mActiveSticker);
                 }
 
                 mState.mActivePointerId = pointerId;
@@ -86,6 +86,9 @@ public class StoryEditorTouchEventHandler implements ScaleGestureDetector.OnScal
                 if (mState.mActiveSticker == null && ViewUtils.needToPerformClick(event)) {
                     mStoryEditorView.performClick();
                 }
+                if (mState.mActiveSticker != null) {
+                    mTouchListener.onStopInteract(mState.mActiveSticker);
+                }
 
                 mState.reset();
                 break;
@@ -93,6 +96,7 @@ public class StoryEditorTouchEventHandler implements ScaleGestureDetector.OnScal
             case MotionEvent.ACTION_CANCEL: {
                 if (mState.mActiveSticker != null) {
                     mTouchListener.onStickerStopMove(mState.mActiveSticker, x, y);
+                    mTouchListener.onStopInteract(mState.mActiveSticker);
                 }
 
                 mState.reset();
@@ -192,8 +196,7 @@ public class StoryEditorTouchEventHandler implements ScaleGestureDetector.OnScal
         StickerView findAppropriateSticker(float x1, float y1, float x2, float y2);
     }
 
-    interface TouchListener {
-        void onStickerTouchDown(@NonNull StickerView stickerView);
+    interface TouchListener extends InteractStickerListener {
         void onBackgroundTouchDown();
 
         void onStickerMove(@NonNull StickerView stickerView,

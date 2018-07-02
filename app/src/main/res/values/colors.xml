@@ -7,6 +7,7 @@
     <color name="divider">#1f000000</color>
 
     <color name="save_button_normal_color">#528bcc</color>
+    <color name="save_button_disabled_color">#882868b0</color>
     <color name="save_button_pressed_color">#2868b0</color>
 
     <color name="none_background">#ebebeb</color>

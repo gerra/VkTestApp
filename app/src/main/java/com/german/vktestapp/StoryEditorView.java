@@ -11,6 +11,7 @@ import android.os.Handler;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.UiThread;
 import android.support.v4.view.MotionEventCompat;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -30,8 +31,8 @@ import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.RecyclerBinView;
 import com.german.vktestapp.view.StickerView;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("deprecation")
@@ -46,7 +47,7 @@ public class StoryEditorView extends ViewGroup
 
     private ImageView mBackgroundImageView;
     private EditText mEditText;
-    private RecyclerBinView mRecyclerBinView;
+    RecyclerBinView mRecyclerBinView;
 
     RecycleBinState mRecyclerBinController;
 
@@ -60,7 +61,10 @@ public class StoryEditorView extends ViewGroup
 
     private TextStyleController mTextStyleController;
 
-    private List<BackgroundSetListener> mBackgroundSetListeners;
+    private Collection<BackgroundSetListener> mBackgroundSetListeners;
+    Collection<InteractStickerListener> mInteractStickerListeners;
+    @Nullable
+    ActivateRecycleBinEffect mActivateRecycleBinEffect;
 
     public StoryEditorView(Context context) {
         this(context, null);
@@ -125,6 +129,10 @@ public class StoryEditorView extends ViewGroup
         mEditText.requestFocus();
     }
 
+    public void setActivateRecycleBinEffect(@Nullable ActivateRecycleBinEffect activateRecycleBinEffect) {
+        mActivateRecycleBinEffect = activateRecycleBinEffect;
+    }
+
     @Override
     public void addView(View child, LayoutParams params) {
         super.addView(child, params);
@@ -173,7 +181,7 @@ public class StoryEditorView extends ViewGroup
             mStickersController = new StickersController(this, mViewOrderController);
         }
         // This just added sticker, we need to save it sizes for change background in future
-        mStickersController.addSticker(stickerView, 0.5f, 0.5f, getMeasuredWidth(), getMeasuredHeight());
+        mStickersController.addSticker(stickerView, getMeasuredWidth(), getMeasuredHeight());
 
         hideKeyboard();
     }
@@ -190,18 +198,35 @@ public class StoryEditorView extends ViewGroup
         }
     }
 
-    public void addBackgroundSetListener(@NonNull BackgroundSetListener backgroundSetListener) {
+    public void addBackgroundSetListener(@NonNull BackgroundSetListener listener) {
         if (mBackgroundSetListeners == null) {
-            mBackgroundSetListeners = new ArrayList<>();
+            mBackgroundSetListeners = new HashSet<>();
         }
-        mBackgroundSetListeners.add(backgroundSetListener);
+        mBackgroundSetListeners.add(listener);
+    }
+
+    public void removeBackgroundSetListener(@NonNull BackgroundSetListener listener) {
+        if (mBackgroundSetListeners != null) {
+            mBackgroundSetListeners.remove(listener);
+        }
+    }
+
+    public void addInteractStickerListener(@NonNull InteractStickerListener listener) {
+        if (mInteractStickerListeners == null) {
+            mInteractStickerListeners = new HashSet<>();
+        }
+        mInteractStickerListeners.add(listener);
+    }
+
+    public void removeInteractStickerListener(@NonNull InteractStickerListener listener) {
+        if (mBackgroundSetListeners != null) {
+            mInteractStickerListeners.remove(listener);
+        }
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-
-
-        Point backgroundSize = measureBackGround(widthMeasureSpec, heightMeasureSpec);
+        Point backgroundSize = measureBackground(widthMeasureSpec, heightMeasureSpec);
         int backgroundWidth = backgroundSize.x;
         int backgroundHeight = backgroundSize.y;
 
@@ -270,11 +295,14 @@ public class StoryEditorView extends ViewGroup
         if (child instanceof StickerView) {
             mStickersController.removeSticker((StickerView) child);
         }
+        if (child == mRecyclerBinView) {
+            removeBackgroundSetListener(mRecyclerBinView);
+        }
         mViewOrderController.removeView(child);
     }
 
     @NonNull
-    private Point measureBackGround(int widthMeasureSpec, int heightMeasureSpec) {
+    private Point measureBackground(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
 
@@ -412,13 +440,16 @@ public class StoryEditorView extends ViewGroup
                                int parentTop,
                                int parentRight,
                                int parentBottom) {
-        StickerLayoutInfo coordinates = mStickersController.getLayoutInfo(stickerView);
-        if (coordinates == null) {
+        StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
+        if (layoutInfo == null) {
             Log.w(TAG, "wtf? StickerView is\'nt in StickersController?");
             return;
         }
-        float stickerCenterX = (parentRight - parentLeft) * coordinates.getX();
-        float stickerCenterY = (parentBottom - parentTop) * coordinates.getY();
+
+        // Initial sticker center is in the center of parent,
+        // for positioning translation is used.
+        float stickerCenterX = (parentRight - parentLeft) * 0.5f;
+        float stickerCenterY = (parentBottom - parentTop) * 0.5f;
 
         int stickerWidth = stickerView.getMeasuredWidth();
         int stickerHeight = stickerView.getMeasuredHeight();
@@ -514,23 +545,43 @@ public class StoryEditorView extends ViewGroup
         return appropriateStickerView;
     }
 
-    private class TouchListenerImpl implements StoryEditorTouchEventHandler.TouchListener {
-        @Override
-        public void onStickerTouchDown(@NonNull StickerView stickerView) {
-            if (mViewOrderController.moveToTop(stickerView)) {
-                invalidate();
-            }
-
-            StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
-            if (isLayoutInfoInvalid(layoutInfo)) {
-                return;
-            }
-
-            // Wtf, AndroidStudio?
-            //noinspection ConstantConditions
-            layoutInfo.setTouched(true);
+    @UiThread
+    @Nullable
+    public Bitmap getBitmap() {
+        if (getMeasuredWidth() <= 0 || getMeasuredHeight() <= 0) {
+            return null;
         }
 
+        // Save state
+        int editTextVisibility = mEditText.getVisibility();
+        boolean editTextCursorVisible = mEditText.isCursorVisible();
+        int recycleBinVisibility = mRecyclerBinView.getVisibility();
+
+        // Hide unnecessary views
+        if (mEditText.getVisibility() == VISIBLE
+                && TextUtils.isEmpty(mEditText.getText())) {
+            mEditText.setVisibility(INVISIBLE);
+        }
+        if (mEditText.getVisibility() == VISIBLE) {
+            mEditText.setCursorVisible(false);
+        }
+        if (mRecyclerBinView.getVisibility() == VISIBLE) {
+            mRecyclerBinView.setVisibility(INVISIBLE);
+        }
+
+        setDrawingCacheEnabled(true);
+        Bitmap bitmap = getDrawingCache().copy(Bitmap.Config.ARGB_8888, false);
+        setDrawingCacheEnabled(false);
+
+        // Restore state
+        mEditText.setVisibility(editTextVisibility);
+        mEditText.setCursorVisible(editTextCursorVisible);
+        mRecyclerBinView.setVisibility(recycleBinVisibility);
+
+        return bitmap;
+    }
+
+    private class TouchListenerImpl implements StoryEditorTouchEventHandler.TouchListener {
         @Override
         public void onBackgroundTouchDown() {
             mHideKeyboardHandler.postDelayed(mHideKeyboardRunnable, LONG_CLICK_TIME);
@@ -554,6 +605,11 @@ public class StoryEditorView extends ViewGroup
                 if (ViewUtils.isPointInView(mRecyclerBinView,
                                             (int) activePointerX,
                                             (int) activePointerY)) {
+                    if (!mRecyclerBinController.isActive()) {
+                        if (mActivateRecycleBinEffect != null) {
+                            mActivateRecycleBinEffect.playEffectOnActivate(getContext());
+                        }
+                    }
                     mRecyclerBinController.activate();
                 } else {
                     mRecyclerBinController.deactivate();
@@ -566,15 +622,6 @@ public class StoryEditorView extends ViewGroup
         @Override
         public void onStickerStopMove(@NonNull StickerView stickerView,
                                       float activePointerX, float activePointerY) {
-            StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
-            if (isLayoutInfoInvalid(layoutInfo)) {
-                return;
-            }
-
-            // Wtf, AndroidStudio?
-            //noinspection ConstantConditions
-            layoutInfo.setTouched(false);
-
             if (ViewUtils.isPointInView(mRecyclerBinView,
                                         (int) activePointerX,
                                         (int) activePointerY)
@@ -595,6 +642,46 @@ public class StoryEditorView extends ViewGroup
         public void onStickerRotate(@NonNull StickerView stickerView) {
 
         }
+
+        @Override
+        public void onStartInteract(@NonNull StickerView stickerView) {
+            if (mViewOrderController.moveToTop(stickerView)) {
+                invalidate();
+            }
+
+            StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
+            if (isLayoutInfoInvalid(layoutInfo)) {
+                return;
+            }
+
+            // Wtf, AndroidStudio?
+            //noinspection ConstantConditions
+            layoutInfo.setTouched(true);
+
+            if (mInteractStickerListeners != null) {
+                for (InteractStickerListener listener : mInteractStickerListeners) {
+                    listener.onStartInteract(stickerView);
+                }
+            }
+        }
+
+        @Override
+        public void onStopInteract(@NonNull StickerView stickerView) {
+            StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
+            if (isLayoutInfoInvalid(layoutInfo)) {
+                return;
+            }
+
+            // Wtf, AndroidStudio?
+            //noinspection ConstantConditions
+            layoutInfo.setTouched(false);
+
+            if (mInteractStickerListeners != null) {
+                for (InteractStickerListener listener : mInteractStickerListeners) {
+                    listener.onStopInteract(stickerView);
+                }
+            }
+        }
     }
 
     private static class RecycleBinState {
@@ -602,6 +689,7 @@ public class StoryEditorView extends ViewGroup
 
         @Nullable
         private View mDeletingView;
+        private boolean mIsActive;
 
         public RecycleBinState(RecyclerBinView recyclerBinView) {
             mRecyclerBinView = recyclerBinView;
@@ -615,18 +703,25 @@ public class StoryEditorView extends ViewGroup
         void hideRecycleBin() {
             mRecyclerBinView.hide();
             mDeletingView = null;
+            mIsActive = false;
         }
 
         void activate() {
             mRecyclerBinView.activate();
+            mIsActive = true;
         }
 
         void deactivate() {
             mRecyclerBinView.deactivate();
+            mIsActive = false;
         }
 
         boolean checkDelete(@NonNull View deletingView) {
             return deletingView == mDeletingView;
+        }
+
+        public boolean isActive() {
+            return mIsActive;
         }
     }
 }

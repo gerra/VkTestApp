@@ -11,15 +11,20 @@ import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
+import android.support.annotation.Nullable;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.german.vktestapp.backgrounds.AddBackgroundClickListener;
 import com.german.vktestapp.backgrounds.Background;
@@ -30,6 +35,12 @@ import com.german.vktestapp.stickerpicker.StickerPickListener;
 import com.german.vktestapp.stickerpicker.StickerPickerDialogFragment;
 import com.german.vktestapp.utils.PermissionsUtils;
 import com.german.vktestapp.utils.Utils;
+import com.german.vktestapp.view.StickerView;
+
+import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 // TODO: change text style
 // TODO: save state
@@ -44,11 +55,17 @@ public class MainActivity extends AppCompatActivity implements
     private static final String KEY_SELECTED_POSITION = "selectedPosition";
 
     private static final String PERMISSION_READ_STORAGE = Manifest.permission.READ_EXTERNAL_STORAGE;
+    private static final String PERMISSION_WRITE_STORAGE = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+
     private static final int REQUEST_CODE_READ_PERMISSION = 50;
+    private static final int REQUEST_CODE_WRITE_PERMISSION = 51;
 
     private static final int REQUEST_CODE_SELECT_PHOTO = 100;
 
+    private StoryPresenter<BitmapStory> mStoryPresenter;
+
     private StoryEditorView mStoryEditorView;
+    private InteractStickerListener mInteractStickerListener;
 
     private BackgroundsAdapter mBackgroundsAdapter;
 
@@ -57,13 +74,50 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Log.d(TAG, getExternalFilesDir(Environment.DIRECTORY_PICTURES).getAbsolutePath());
+        Log.d(TAG, getFilesDir().getAbsolutePath());
+        Log.d(TAG, getCacheDir().getAbsolutePath());
+        Log.d(TAG, getDir("VkTestApp", MODE_PRIVATE).getAbsolutePath());
+        Log.d(TAG, Environment.getDataDirectory().getAbsolutePath());
+        Log.d(TAG, Environment.getExternalStorageDirectory().getAbsolutePath());
+        Log.d(TAG, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
+
+        File storiesDir;
+        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            storiesDir = new File(Environment.getExternalStorageDirectory(), "VkTestApp/Stories");
+        } else {
+            storiesDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            if (storiesDir == null) {
+                storiesDir = new File(getFilesDir(), "Stories");
+            }
+        }
+
+        mStoryPresenter = new StoryPresenterImpl<>(new BitmapStorySaver(storiesDir), new Handler());
+
         mStoryEditorView = findViewById(R.id.story_editor_view);
+        mStoryEditorView.setActivateRecycleBinEffect(new VibrateEffect());
 
         setActionBar();
         int selectedPosition = savedInstanceState != null
                 ? savedInstanceState.getInt(KEY_SELECTED_POSITION, BackgroundsAdapter.UNKNOWN_POSITION)
                 : 0;
         setBackgroundsPanel(selectedPosition);
+
+        View saveButton = findViewById(R.id.save_story);
+        saveButton.setOnClickListener(v -> {
+            PermissionsUtils.checkAndRequestPermission(this,
+                                                       PERMISSION_WRITE_STORAGE,
+                                                       REQUEST_CODE_WRITE_PERMISSION,
+                                                       this::saveStory);
+        });
+        mInteractStickerListener = new InteractStickerListenerImpl(saveButton);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mStoryPresenter.attachView(this);
+        mStoryEditorView.addInteractStickerListener(mInteractStickerListener);
     }
 
     private void setActionBar() {
@@ -101,28 +155,24 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onAddBackgroundClick() {
-        if (!PermissionsUtils.checkPermission(this, PERMISSION_READ_STORAGE)) {
-            if (PermissionsUtils.isRuntimePermissionsAvailable(this)) {
-                ActivityCompat.requestPermissions(this,
-                                                  new String[] { PERMISSION_READ_STORAGE },
-                                                  REQUEST_CODE_READ_PERMISSION);
-            } else {
-                throw new IllegalStateException("There is no permission for read storage in manifest?");
-            }
-        } else {
-            startImagePicker();
-        }
+        PermissionsUtils.checkAndRequestPermission(this,
+                                                   PERMISSION_READ_STORAGE,
+                                                   REQUEST_CODE_READ_PERMISSION,
+                                                   this::startImagePicker);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case REQUEST_CODE_READ_PERMISSION: {
-                if (permissions.length > 0
-                        && PERMISSION_READ_STORAGE.equals(permissions[0])
-                        && grantResults.length > 0
-                        && PackageManager.PERMISSION_GRANTED == grantResults[0]) {
+                if (grantResults.length > 0 && PackageManager.PERMISSION_GRANTED == grantResults[0]) {
                     startImagePicker();
+                }
+                break;
+            }
+            case REQUEST_CODE_WRITE_PERMISSION: {
+                if (grantResults.length > 0 && PackageManager.PERMISSION_GRANTED == grantResults[0]) {
+                    saveStory();
                 }
                 break;
             }
@@ -151,6 +201,36 @@ public class MainActivity extends AppCompatActivity implements
         outState.putInt(KEY_SELECTED_POSITION, mBackgroundsAdapter.getSelectedPosition());
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mStoryPresenter.detachView();
+        mStoryEditorView.removeInteractStickerListener(mInteractStickerListener);
+    }
+
+    @Override
+    public void showProgress() {
+
+    }
+
+    @Override
+    public void onSaveComplete() {
+        if (Looper.myLooper() == null) {
+            Looper.prepare();
+        }
+        Toast.makeText(this, R.string.story_save_complete, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onSaveError() {
+        Toast.makeText(this, R.string.story_save_error, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void hideProgress() {
+
+    }
+
     private void onPhotoSelected(@NonNull Uri selectedUri) {
         String[] filePath = { MediaStore.Images.Media.DATA };
         Cursor cursor = getContentResolver()
@@ -176,6 +256,47 @@ public class MainActivity extends AppCompatActivity implements
         Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
         photoPickerIntent.setType("image/*");
         startActivityForResult(photoPickerIntent, REQUEST_CODE_SELECT_PHOTO);
+    }
+
+    private void saveStory() {
+        String name = UUID.randomUUID()
+                .toString()
+                .replaceAll("-", "")
+                .substring(0, 10)
+                .toUpperCase();
+        Bitmap bitmap = mStoryEditorView.getBitmap();
+        mStoryPresenter.save(new BitmapStory(name) {
+            @Nullable
+            @Override
+            public Bitmap getBitmap() {
+                return bitmap;
+            }
+        });
+    }
+
+    private static class InteractStickerListenerImpl implements InteractStickerListener {
+        @NonNull
+        private final View mSaveButton;
+        @NonNull
+        private final Set<StickerView> mActiveStickers = new HashSet<>();
+
+        public InteractStickerListenerImpl(@NonNull View saveButton) {
+            mSaveButton = saveButton;
+        }
+
+        @Override
+        public void onStartInteract(@NonNull StickerView stickerView) {
+            mActiveStickers.add(stickerView);
+            mSaveButton.setEnabled(false);
+        }
+
+        @Override
+        public void onStopInteract(@NonNull StickerView stickerView) {
+            mActiveStickers.remove(stickerView);
+            if (mActiveStickers.isEmpty()) {
+                mSaveButton.setEnabled(true);
+            }
+        }
     }
 
     private static class BackgroundsItemDecoration extends RecyclerView.ItemDecoration {

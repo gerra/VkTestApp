@@ -22,14 +22,18 @@ public class TextStyleController implements BackgroundSetListener {
     private final Collection<EditTextProvider> mEditTextProviders = new HashSet<>();
     @NonNull
     private final List<Style> mStyles;
-    private int mCurrentStyleIndex = UNKNOWN_INDEX;
+    private int mCurrentStyleIndex = 0;
 
     private boolean mLastBackgroundIsEmpty;
 
     private MyCharacterStyle mCurrentCharacterStyle;
 
     public TextStyleController(@NonNull List<Style> styles) {
+        if (styles.isEmpty()) {
+            throw new IllegalArgumentException("Styles should not be empty");
+        }
         mStyles = Collections.unmodifiableList(styles);
+        mCurrentCharacterStyle = new MyCharacterStyle(mStyles.get(0));
     }
 
     public void addEditTextProvider(@NonNull EditTextProvider editTextProvider) {
@@ -55,20 +59,24 @@ public class TextStyleController implements BackgroundSetListener {
         }
 
         for (EditTextProvider editTextProvider : mEditTextProviders) {
-            EditText editText = editTextProvider.getEditText();
-            if (editText == null) {
-                continue;
-            }
-            Editable editable = editText.getText();
-            if (editable == null) {
-                continue;
-            }
-
-            editable.setSpan(mCurrentCharacterStyle,
-                             0,
-                             editable.length(),
-                             Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+            update(editTextProvider);
         }
+    }
+
+    private void update(@NonNull EditTextProvider editTextProvider) {
+        EditText editText = editTextProvider.getEditText();
+        if (editText == null) {
+            return;
+        }
+        Editable editable = editText.getText();
+        if (editable == null) {
+            return;
+        }
+
+        editable.setSpan(mCurrentCharacterStyle,
+                         0,
+                         editable.length(),
+                         Spanned.SPAN_INCLUSIVE_INCLUSIVE);
     }
 
     @Override

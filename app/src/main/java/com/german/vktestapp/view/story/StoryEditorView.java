@@ -503,7 +503,7 @@ public class StoryEditorView extends ViewGroup
         ViewUtils.hideKeyboard(this);
         mEditText.clearFocus();
         if (TextUtils.isEmpty(mEditText.getText())) {
-            mEditText.setVisibility(GONE);
+            mEditText.setVisibility(INVISIBLE);
         }
     }
 
@@ -521,7 +521,8 @@ public class StoryEditorView extends ViewGroup
         int childCount = getChildCount();
         for (int i = childCount - 1; i >= 0; i--) {
             View child = getChildAt(getChildDrawingOrder(childCount, i));
-            if (ViewUtils.isPointInView(child, (int) touchX, (int) touchY)) {
+            if (child.getVisibility() == VISIBLE
+                    && ViewUtils.isPointInView(child, (int) touchX, (int) touchY)) {
                 return child;
             }
         }
@@ -570,13 +571,13 @@ public class StoryEditorView extends ViewGroup
         // Hide unnecessary views
         if (mEditText.getVisibility() == VISIBLE
                 && TextUtils.isEmpty(mEditText.getText())) {
-            mEditText.setVisibility(GONE);
+            mEditText.setVisibility(INVISIBLE);
         }
         if (mEditText.getVisibility() == VISIBLE) {
             mEditText.setCursorVisible(false);
         }
         if (mRecyclerBinView.getVisibility() == VISIBLE) {
-            mRecyclerBinView.setVisibility(GONE);
+            mRecyclerBinView.setVisibility(INVISIBLE);
         }
 
         setDrawingCacheEnabled(true);

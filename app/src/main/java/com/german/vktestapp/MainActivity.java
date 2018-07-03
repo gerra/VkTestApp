@@ -113,10 +113,7 @@ public class MainActivity extends AppCompatActivity implements
         mTextStyleController = new TextStyleController(Arrays.asList(defaultStyle, firstStyle, secondStyle));
 
         setActionBar();
-        int selectedPosition = savedInstanceState != null
-                ? savedInstanceState.getInt(KEY_SELECTED_POSITION, BackgroundsAdapter.UNKNOWN_POSITION)
-                : 0;
-        setBackgroundsPanel(selectedPosition);
+        setBackgroundsPanel(0);
 
         View saveButton = findViewById(R.id.save_story);
         saveButton.setOnClickListener(v -> {
@@ -213,12 +210,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putInt(KEY_SELECTED_POSITION, mBackgroundsAdapter.getSelectedPosition());
-    }
-
-    @Override
     protected void onStop() {
         super.onStop();
         mStoryPresenter.detachView();
@@ -247,7 +238,6 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void hideProgress() {
-
     }
 
     private void onPhotoSelected(@NonNull Uri selectedUri) {

@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.view.MotionEventCompat;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -15,10 +16,13 @@ import com.german.vktestapp.InteractStickerListener;
 import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.StickerView;
 
+// !!!
+// Use MotionEventCompat because of on my OnePlus5 for some cases deprecated values are received
+// !!!
 public class StoryEditorTouchEventHandler {
     private static final String TAG = "[EditorTouchHandler]";
 
-    private static PointF NIL_POINT = new PointF(0, 0);
+    private static final PointF NIL_POINT = new PointF(0, 0);
 
     @NonNull
     private final ViewFinder mViewFinder;
@@ -27,6 +31,7 @@ public class StoryEditorTouchEventHandler {
 
     private final State mState = new State();
     private final ZoomState mZoomState;
+    private final RotateState mRotateState = new RotateState();
 
 //    private final ScaleGestureDetector mScaleGestureDetector;
 
@@ -52,9 +57,13 @@ public class StoryEditorTouchEventHandler {
 
     @SuppressWarnings("deprecation")
     public boolean onTouchEvent(MotionEvent event) {
-        int pointerIndex = MotionEventCompat.getActionIndex(event);
+        final int pointerIndex = MotionEventCompat.getActionIndex(event);
+        final int pointerId = MotionEventCompat.getPointerId(event, pointerIndex);
+        final float x = MotionEventCompat.getX(event, pointerIndex);
+        final float y = MotionEventCompat.getY(event, pointerIndex);
+        final PointF currentPoint = new PointF(x, y);
 
-        PointF eventFocus = calculateFocusPoint(event);
+        final PointF eventFocus = calculateFocusPoint(event);
 
         switch (MotionEventCompat.getActionMasked(event)) {
             case MotionEvent.ACTION_DOWN: {
@@ -69,7 +78,10 @@ public class StoryEditorTouchEventHandler {
                     mTouchListener.onBackgroundTouchDown();
                 }
 
+                handleRotate(event, mState.mActiveSticker, eventFocus, mState.mCoordinates);
+
                 mState.mLastTouchForMove = eventFocus;
+                mState.mCoordinates.put(pointerId, currentPoint);
 
                 break;
             }
@@ -85,12 +97,14 @@ public class StoryEditorTouchEventHandler {
                     }
                 }
 
-                mState.mIsOnlyMove = false;
-                mState.mLastTouchForMove = eventFocus;
-
                 if (mState.mActiveSticker != null) {
                     handleZoom(event, mState.mActiveSticker, eventFocus);
+                    handleRotate(event, mState.mActiveSticker, eventFocus, mState.mCoordinates);
                 }
+
+                mState.mIsOnlyMove = false;
+                mState.mLastTouchForMove = eventFocus;
+                mState.mCoordinates.put(pointerId, currentPoint);
 
                 break;
             }
@@ -107,20 +121,26 @@ public class StoryEditorTouchEventHandler {
                     }
                 }
 
-                mState.mLastTouchForMove = eventFocus;
-
                 if (mState.mActiveSticker != null && MotionEventCompat.getPointerCount(event) >= 2) {
                     handleZoom(event, mState.mActiveSticker, eventFocus);
+                    handleRotate(event, mState.mActiveSticker, eventFocus, mState.mCoordinates);
                 }
+
+                mState.mLastTouchForMove = eventFocus;
+                updateMoveCoordinates(event);
+
+//                Log.d(TAG, "MDA " + pointerId + " " + mState.mCoordinates.toString());
 
                 break;
             }
             case MotionEvent.ACTION_POINTER_UP: {
-                mState.mLastTouchForMove = eventFocus;
-
                 if (mState.mActiveSticker != null) {
                     handleZoom(event, mState.mActiveSticker, eventFocus);
+                    handleRotate(event, mState.mActiveSticker, eventFocus, mState.mCoordinates);
                 }
+
+                mState.mLastTouchForMove = eventFocus;
+                mState.mCoordinates.remove(pointerId);
 
                 break;
             }
@@ -175,19 +195,18 @@ public class StoryEditorTouchEventHandler {
     }
 
     // For ACTION_MOVE, ACTION_POINTER_DOWN, ACTION_POINTER_UP
+    // count(event) >= 2
     private void handleZoom(@NonNull MotionEvent event,
                             @NonNull StickerView stickerView,
                             @NonNull PointF focus) {
-        boolean isPointerAction = MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_POINTER_DOWN
-                || MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_POINTER_UP;
+        int action = MotionEventCompat.getActionMasked(event);
 
-        mZoomState.mCurrentFocus = focus;
+        boolean isPointerAction = action == MotionEvent.ACTION_POINTER_DOWN || action == MotionEvent.ACTION_POINTER_UP;
 
         PointF deviation = calculateDeviationPoint(event, focus);
         float span = (float) Math.hypot(deviation.x * 2, deviation.y * 2);
         boolean wasInProgress = mZoomState.mInProgress;
 
-        mZoomState.mCurrentFocus = focus;
         if (mZoomState.mInProgress && (span < mZoomState.mMinSpan || isPointerAction)) {
             mZoomState.mInitialSpan = span;
             mZoomState.mInProgress = false;
@@ -204,7 +223,7 @@ public class StoryEditorTouchEventHandler {
             mTouchListener.onStickerStartScale(stickerView, focus.x, focus.y);
         }
 
-        if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_MOVE) {
+        if (action == MotionEvent.ACTION_MOVE) {
             mZoomState.mCurSpan = span;
             if (mZoomState.mInProgress) {
                 float scaleFactor = mZoomState.mPrevSpan > 0
@@ -217,6 +236,96 @@ public class StoryEditorTouchEventHandler {
         }
     }
 
+    // For ACTION_DOWN, ACTION_MOVE, ACTION_POINTER_DOWN, ACTION_POINTER_UP
+    // count(event) >= 2
+    private void handleRotate(@NonNull MotionEvent event,
+                              @Nullable StickerView stickerView,
+                              @NonNull PointF focus,
+                              @NonNull SparseArray<PointF> coordinates) {
+        int action = MotionEventCompat.getActionMasked(event);
+        int index = MotionEventCompat.getActionIndex(event);
+        int id = MotionEventCompat.getPointerId(event, index);
+
+        boolean updatePivot;
+        if (action == MotionEvent.ACTION_DOWN) {
+            mRotateState.mFirstPointerId = id;
+            return;
+        } else if (action == MotionEvent.ACTION_POINTER_UP) {
+            if (id == mRotateState.mFirstPointerId) {
+                mRotateState.reset();
+                return;
+            } else if (id == mRotateState.mSecondPointerId) { // ??
+                mRotateState.mSecondPointerId = -1;
+                return;
+            } else {
+                updatePivot = false;
+            }
+        } else if (mRotateState.mFirstPointerId == -1) {
+            return;
+        } else if (action == MotionEvent.ACTION_POINTER_DOWN) {
+            mRotateState.mSecondPointerId = id;
+            updatePivot = true;
+        } else /*if (action == MotionEvent.ACTION_MOVE)*/ {
+            if (id != mRotateState.mFirstPointerId && id != mRotateState.mSecondPointerId) {
+                return;
+            }
+
+            updatePivot = (id == mRotateState.mFirstPointerId);
+        }
+
+        if (stickerView == null || mRotateState.mFirstPointerId == -1 || mRotateState.mSecondPointerId == -1) {
+            return;
+        }
+
+        int firstIndex = MotionEventCompat.findPointerIndex(event, mRotateState.mFirstPointerId);
+        int secondIndex = MotionEventCompat.findPointerIndex(event, mRotateState.mSecondPointerId);
+
+        float x1 = MotionEventCompat.getX(event, firstIndex);
+        float y1 = MotionEventCompat.getY(event, firstIndex);
+
+        float x2 = MotionEventCompat.getX(event, secondIndex);
+        float y2 = MotionEventCompat.getY(event, secondIndex);
+
+        if (updatePivot) {
+            mRotateState.mInProgress = true;
+            mRotateState.mCurrentFocus = focus;
+            mTouchListener.onStickerStartRotate(stickerView, x1, y1);
+        }
+
+        if (action == MotionEvent.ACTION_MOVE) {
+            PointF prevCoord = coordinates.get(mRotateState.mSecondPointerId);
+            if (prevCoord == null) {
+                Log.e(TAG, "WTF???");
+                return;
+            }
+
+//            Log.d(TAG, "coords: (" + mRotateState.mFirstPointerId + " " + mRotateState.mSecondPointerId + ") " +
+//                    + prevCoord.x + "," + prevCoord.y + " -> " + x2 + "," + y2 + "; " + coordinates.toString());
+
+            float vx1 = prevCoord.x - x1;
+            float vy1 = prevCoord.y - y1;
+//
+            float vx2 = x2 - x1;
+            float vy2 = y2 - y1;
+
+//            float dx = x2 - x1;
+//            float dy = y2 - y1;
+
+            float lengthMultiply = (float) (Math.hypot(vx1, vy1) * Math.hypot(vx2, vy2));
+            float scalar = vx1 * vy2 - vy1 * vx2;
+//            Log.d(TAG, "cos=" + scalar / lengthMultiply);
+            float radians = (float) Math.asin(scalar / lengthMultiply);
+            float degrees = (float) Math.toDegrees(radians);
+
+//            Log.d(TAG, "coords: " + prevCoord.x + "," + prevCoord.y + " -> " + x2 + "," + y2);
+            Log.d(TAG, "degrees: " + "(" + vx1 + "," + vy1 + "), " + "(" + vx2 + "," + vy2 + "), " + degrees);
+
+            mTouchListener.onStickerRotate(stickerView, degrees);
+        }
+
+        return;
+    }
+
     private void onStopInteract(@NonNull MotionEvent event, @NonNull PointF lastPoint) {
         if (mState.mActiveSticker != null) {
             mTouchListener.onStickerStopMove(mState.mActiveSticker,
@@ -227,34 +336,17 @@ public class StoryEditorTouchEventHandler {
 
         mState.reset();
         mZoomState.reset();
+        mRotateState.reset();
     }
 
-//    @Override
-//    public boolean onScale(ScaleGestureDetector detector) {
-//        float scaleFactor = detector.getScaleFactor();
-//        if (mState.mActiveSticker != null) {
-//            mTouchListener.onStickerScale(mState.mActiveSticker, scaleFactor);
-//        }
-//
-//        return scaleFactor > 0;
-//    }
-//
-//    @Override
-//    public boolean onScaleBegin(ScaleGestureDetector detector) {
-//        if (mState.mActiveSticker != null) {
-//            mTouchListener.onStickerStartScale(mState.mActiveSticker,
-//                                               detector.getFocusX(),
-//                                               detector.getFocusY());
-//
-//            return true;
-//        }
-//
-//        return false;
-//    }
-//
-//    @Override
-//    public void onScaleEnd(ScaleGestureDetector detector) {
-//    }
+    private void updateMoveCoordinates(@NonNull MotionEvent event) {
+        int count = event.getPointerCount();
+        for (int i = 0; i < count; i++) {
+            int id = MotionEventCompat.getPointerId(event, i);
+            mState.mCoordinates.put(id, new PointF(MotionEventCompat.getX(event, i),
+                                                   MotionEventCompat.getY(event, i)));
+        }
+    }
 
     private static class State {
         @Nullable
@@ -262,17 +354,19 @@ public class StoryEditorTouchEventHandler {
         PointF mLastTouchForMove;
         boolean mIsOnlyMove;
 
+        @NonNull
+        SparseArray<PointF> mCoordinates = new SparseArray<>(5);
+
         void reset() {
             mActiveSticker = null;
             mIsOnlyMove = false;
+            mCoordinates.clear();
         }
     }
 
     private static class ZoomState {
         final float mSpanSlop;
         final float mMinSpan;
-
-        PointF mCurrentFocus;
 
         boolean mInProgress;
         float mInitialSpan;
@@ -287,6 +381,21 @@ public class StoryEditorTouchEventHandler {
         void reset() {
             mInProgress = false;
             mInitialSpan = 0;
+        }
+    }
+
+    private static class RotateState {
+        int mFirstPointerId = -1;
+        int mSecondPointerId = -1;
+
+        boolean mInProgress;
+
+        PointF mCurrentFocus;
+
+        void reset() {
+            mInProgress = false;
+            mFirstPointerId = -1;
+            mSecondPointerId = -1;
         }
     }
 

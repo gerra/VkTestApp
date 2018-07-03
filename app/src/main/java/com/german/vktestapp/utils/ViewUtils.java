@@ -1,6 +1,7 @@
 package com.german.vktestapp.utils;
 
 import android.content.Context;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -18,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 public class ViewUtils {
     private static final long CLICK_DOWN_TIME = TimeUnit.MILLISECONDS.toMillis(150);
     private static final Rect RECT = new Rect();
+    private static final float[] VECTOR = new float[2];
 
     private ViewUtils() {
         // no instance
@@ -73,6 +75,15 @@ public class ViewUtils {
             view.getHitRect(RECT);
             return RECT.contains(pointX, pointY);
         }
+    }
+
+    @NonNull
+    public static PointF getPointRelativeToParent(@NonNull View view, float x, float y) {
+        VECTOR[0] = x;
+        VECTOR[1] = y;
+        view.getMatrix()
+                .mapPoints(VECTOR);
+        return new PointF(VECTOR[0] + view.getLeft(), VECTOR[1] + view.getTop());
     }
 
     @SuppressWarnings("WeakerAccess")

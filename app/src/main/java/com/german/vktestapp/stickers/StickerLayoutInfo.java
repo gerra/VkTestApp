@@ -9,8 +9,6 @@ public class StickerLayoutInfo {
     private float mSelfRatioX = 1f;
     private float mSelfRatioY = 1f;
 
-    private boolean mIsTouched;
-
     public void setCenter(float x, float y) {
         mX = x;
         mY = y;
@@ -52,13 +50,5 @@ public class StickerLayoutInfo {
 
     public float getSelfRatioY() {
         return mSelfRatioY;
-    }
-
-    public void setTouched(boolean touched) {
-        mIsTouched = touched;
-    }
-
-    public boolean isTouched() {
-        return mIsTouched;
     }
 }

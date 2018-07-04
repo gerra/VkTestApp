@@ -4,9 +4,9 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.View;
 
-import com.german.vktestapp.stickers.StickerLayoutInfo;
 import com.german.vktestapp.view.StickerView;
 
+import java.util.Collection;
 import java.util.WeakHashMap;
 
 public class StickersController {
@@ -17,7 +17,7 @@ public class StickersController {
     @NonNull
     private final ViewOrderController mViewOrderController;
 
-    private final WeakHashMap<StickerView, StickerLayoutInfo> mCoordinates = new WeakHashMap<>(50);
+    private final WeakHashMap<StickerView, StickerInfo> mCoordinates = new WeakHashMap<>(50);
 
     public StickersController(@NonNull View parent,
                               @NonNull ViewOrderController viewOrderController) {
@@ -26,15 +26,15 @@ public class StickersController {
     }
 
     @NonNull
-    public StickerLayoutInfo addSticker(@NonNull StickerView stickerView,
-                                        int holderWidth,
-                                        int holderHeight) {
-        StickerLayoutInfo stickerLayoutInfo = new StickerLayoutInfo();
-        stickerLayoutInfo.setHolderBackgroundSizes(holderWidth, holderHeight);
-        mCoordinates.put(stickerView, stickerLayoutInfo);
+    public StickerInfo addSticker(@NonNull StickerView stickerView,
+                                  int holderWidth,
+                                  int holderHeight) {
+        StickerInfo stickerInfo = new StickerInfo();
+        stickerInfo.setHolderBackgroundSizes(holderWidth, holderHeight);
+        mCoordinates.put(stickerView, stickerInfo);
         stickerView.setOnClickListener(this::moveToTop);
 
-        return stickerLayoutInfo;
+        return stickerInfo;
     }
 
     public void removeSticker(@NonNull StickerView stickerView) {
@@ -42,8 +42,13 @@ public class StickersController {
     }
 
     @Nullable
-    public StickerLayoutInfo getLayoutInfo(@NonNull StickerView stickerView) {
+    public StickerInfo getStickerInfo(@NonNull StickerView stickerView) {
         return mCoordinates.get(stickerView);
+    }
+
+    @NonNull
+    public Collection<StickerView> getAllStickers() {
+        return mCoordinates.keySet();
     }
 
     private void moveToTop(@NonNull View view) {

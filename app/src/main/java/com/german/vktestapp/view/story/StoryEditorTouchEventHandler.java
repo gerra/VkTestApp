@@ -213,7 +213,7 @@ public class StoryEditorTouchEventHandler {
 //                float scaleFactor = mZoomState.mPrevSpan > 0
 //                        ? mZoomState.mCurSpan / mZoomState.mPrevSpan
 //                        : 1;
-//                mTouchListener.onStickerScale(stickerView, scaleFactor);
+//                mTouchListener.onStickerScaleAndRotate(stickerView, scaleFactor);
 //            }
 //
 //            mZoomState.mPrevSpan = mZoomState.mCurSpan;

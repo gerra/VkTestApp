@@ -32,7 +32,6 @@ import com.german.vktestapp.EditTextProvider;
 import com.german.vktestapp.InteractStickerListener;
 import com.german.vktestapp.R;
 import com.german.vktestapp.backgrounds.Background;
-import com.german.vktestapp.stickers.StickerLayoutInfo;
 import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.RecyclerBinView;
 import com.german.vktestapp.view.StickerTouchListener;
@@ -67,7 +66,9 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
     StickersController mStickersController;
 
 //    private StoryEditorTouchEventHandler mTouchEventHandler;
-    private StickerTouchListener mStickerTouchListener = new StickerTouchListener(new TouchListenerImpl());
+//    private StickerTouchListener mStickerTouchListener = new StickerTouchListener(new ActionListenerImpl());
+    private ActionListenerImpl mActionListener = new ActionListenerImpl();
+    private MultiTouchListener mMultiTouchListener;
 
     private Collection<BackgroundSetListener> mBackgroundSetListeners;
     Collection<InteractStickerListener> mInteractStickerListeners;
@@ -98,6 +99,7 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
         setFocusable(true);
         setFocusableInTouchMode(true);
         setChildrenDrawingOrderEnabled(true);
+        setMotionEventSplittingEnabled(false);
 
         initBackgroundImageView(context);
         initEditText(context);
@@ -146,7 +148,20 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
             mRecyclerBinController = new RecycleBinState(mRecyclerBinView);
             mViewOrderController.moveHighPriorityViewToTop(mRecyclerBinView);
         } else if (child instanceof StickerView) {
-            child.setOnTouchListener(mStickerTouchListener);
+            StickerView stickerView = (StickerView) child;
+
+            mViewOrderController.moveToTop(stickerView);
+
+            if (mStickersController == null) {
+                mStickersController = new StickersController(this, mViewOrderController);
+            }
+            // This just added sticker, we need to save it sizes for change background in future
+            mStickersController.addSticker(stickerView,
+                                           getMeasuredWidth(),
+                                           getMeasuredHeight());
+            stickerView.setOnTouchListener(new StickerTouchListener(mActionListener));
+
+            hideKeyboard();
         }
     }
 
@@ -177,15 +192,6 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
         stickerView.setImageBitmap(bitmap);
 
         addView(stickerView);
-        mViewOrderController.moveToTop(stickerView);
-
-        if (mStickersController == null) {
-            mStickersController = new StickersController(this, mViewOrderController);
-        }
-        // This just added sticker, we need to save it sizes for change background in future
-        mStickersController.addSticker(stickerView, getMeasuredWidth(), getMeasuredHeight());
-
-        hideKeyboard();
     }
 
     @Override
@@ -268,9 +274,14 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
     }
 
     @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        return super.dispatchTouchEvent(ev);
+    }
+
+    @Override
     public boolean onInterceptTouchEvent(MotionEvent event) {
         switch (MotionEventCompat.getActionMasked(event)) {
-            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_DOWN: {
                 int x = (int) MotionEventCompat.getX(event, 0);
                 int y = (int) MotionEventCompat.getY(event, 0);
                 View touchedChild = findViewUnderTouch(x, y);
@@ -278,6 +289,7 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
                     return true;
                 }
                 break;
+            }
         }
 
         return false;
@@ -375,7 +387,7 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
 //                    
 //                }
             } else {
-                StickerLayoutInfo info = mStickersController.getLayoutInfo(stickerView);
+                StickerInfo info = mStickersController.getStickerInfo(stickerView);
                 if (info != null) {
                     float initialBackgroundWidth = info.getHolderBackgroundWidth();
                     float initialBackgroundHeight = info.getHolderBackgroundHeight();
@@ -457,8 +469,8 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
                                int parentTop,
                                int parentRight,
                                int parentBottom) {
-        StickerLayoutInfo layoutInfo = mStickersController.getLayoutInfo(stickerView);
-        if (layoutInfo == null) {
+        StickerInfo info = mStickersController.getStickerInfo(stickerView);
+        if (info == null) {
             Log.w(TAG, "wtf? StickerView is\'nt in StickersController?");
             return;
         }
@@ -515,16 +527,7 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
         }
     }
 
-    static boolean isLayoutInfoInvalid(@Nullable StickerLayoutInfo layoutInfo) {
-        if (layoutInfo == null) {
-            Log.w(TAG, "wtf? LayoutInfo is null?");
-            return true;
-        }
-        return false;
-    }
-
     @Nullable
-//    @Override
     public View findViewUnderTouch(float touchX, float touchY) {
         int childCount = getChildCount();
         for (int i = childCount - 1; i >= 0; i--) {
@@ -536,33 +539,6 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
         }
         return null;
     }
-
-//    @Nullable
-//    @Override
-//    public StickerView findAppropriateSticker(float x1, float y1, float x2, float y2) {
-//        float centerX = (x1 + x2) / 2;
-//        float centerY = (y1 + y2) / 2;
-//
-//        StickerView appropriateStickerView = null;
-//        double minDistance = Double.POSITIVE_INFINITY;
-//
-//        int childCount = getChildCount();
-//        for (int i = 0; i < childCount; i++) {
-//            View child = getChildAt(i);
-//            if (child instanceof StickerView) {
-//                StickerView stickerView = ((StickerView) child);
-//                stickerView.getHitRect(HIT_RECT);
-//                double distance = Math.hypot(HIT_RECT.centerX() - centerX,
-//                                             HIT_RECT.centerY() - centerY);
-//                if (appropriateStickerView == null || distance < minDistance) {
-//                    appropriateStickerView = stickerView;
-//                    minDistance = distance;
-//                }
-//            }
-//        }
-//
-//        return appropriateStickerView;
-//    }
 
     @UiThread
     @Nullable
@@ -606,7 +582,7 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
         return mEditText;
     }
 
-    private float getScaleFactor(@NonNull StickerLayoutInfo info, float totalScale) {
+    private float getScaleFactor(@NonNull StickerInfo info, float totalScale) {
         float prevSelfRatioX = info.getSelfRatioX();
         float prevSelfRatioY = info.getSelfRatioY();
         float prevSelfRatio = Math.min(prevSelfRatioX, prevSelfRatioY);
@@ -614,18 +590,16 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
         return totalScale / prevSelfRatio;
     }
 
-    private class TouchListenerImpl implements StickerTouchListener.ActionListener {
+    private class ActionListenerImpl implements StickerTouchListener.ActionListener {
+        @Nullable
+        StickerView mActiveSticker;
+
         private final float[] mVector = new float[2];
 
         @Override
         public void onClick(@NonNull StickerView stickerView) {
             performClick();
         }
-
-//        @Override
-//        public void onBackgroundTouchDown() {
-//            mHideKeyboardHandler.postDelayed(mHideKeyboardRunnable, LONG_CLICK_TIME);
-//        }
 
         @Override
         public void onStartInteract(@NonNull StickerView stickerView) {
@@ -638,6 +612,10 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
                     listener.onStartInteract(stickerView);
                 }
             }
+
+            mActiveSticker = stickerView;
+
+//            disableTouches(mActiveSticker);
         }
 
         @Override
@@ -655,7 +633,7 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
             PointF relativeToParent = ViewUtils.getPointRelativeToParent(stickerView, moveX, moveY);
 
             if (isPureMove) {
-                mRecyclerBinController.showRecycleBin(stickerView);
+                mRecyclerBinController.showRecycleBin();
                 if (ViewUtils.isPointInView(mRecyclerBinView,
                                             (int) relativeToParent.x,
                                             (int) relativeToParent.y)) {
@@ -679,10 +657,9 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
                                       float movePointX, float movePointY) {
             if (isPureMove) {
                 PointF relativeToParent = ViewUtils.getPointRelativeToParent(stickerView, movePointX, movePointY);
-                if (mRecyclerBinController.checkDelete(stickerView)
-                        && ViewUtils.isPointInView(mRecyclerBinView,
-                                                   (int) relativeToParent.x,
-                                                   (int) relativeToParent.y)) {
+                if (ViewUtils.isPointInView(mRecyclerBinView,
+                                            (int) relativeToParent.x,
+                                            (int) relativeToParent.y)) {
                     removeView(stickerView);
                 }
             }
@@ -719,14 +696,21 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
         }
 
         @Override
-        public void onStickerScale(@NonNull StickerView stickerView, float scaleFactor) {
+        public void onStickerScaleAndRotate(@NonNull StickerView stickerView,
+                                            float scaleFactor, float degrees,
+                                            float deltaFocusX, float deltaFocusY) {
+            translate(stickerView, deltaFocusX, deltaFocusY);
+
             stickerView.setScaleX(stickerView.getScaleX() * scaleFactor);
             stickerView.setScaleY(stickerView.getScaleY() * scaleFactor);
-        }
 
-        @Override
-        public void onStickerRotate(@NonNull StickerView stickerView, float degrees) {
-            stickerView.setRotation(stickerView.getRotation() + degrees);
+            float newDegrees = stickerView.getRotation() + degrees;
+            if (newDegrees < 180) {
+                newDegrees += 360;
+            } else if (newDegrees > 180) {
+                newDegrees -= 360;
+            }
+            stickerView.setRotation(newDegrees);
         }
 
         @Override
@@ -736,28 +720,50 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
                     listener.onStopInteract(stickerView);
                 }
             }
+
+//            enableTouches();
+        }
+
+        private void translate(@NonNull StickerView stickerView, float deltaX, float deltaY) {
+            mVector[0] = deltaX;
+            mVector[1] = deltaY;
+            stickerView.getMatrix()
+                    .mapVectors(mVector);
+            stickerView.setTranslationX(stickerView.getTranslationX() + mVector[0]);
+            stickerView.setTranslationY(stickerView.getTranslationY() + mVector[1]);
+
+        }
+
+        private void disableTouches(@NonNull StickerView exclude) {
+            for (StickerView stickerView : mStickersController.getAllStickers()) {
+                if (stickerView != exclude) {
+                    stickerView.setEnabled(false);
+                }
+            }
+        }
+
+        private void enableTouches() {
+            for (StickerView stickerView : mStickersController.getAllStickers()) {
+                stickerView.setEnabled(true);
+            }
         }
     }
 
     private static class RecycleBinState {
         final RecyclerBinView mRecyclerBinView;
 
-        @Nullable
-        private View mDeletingView;
         private boolean mIsActive;
 
         public RecycleBinState(RecyclerBinView recyclerBinView) {
             mRecyclerBinView = recyclerBinView;
         }
 
-        void showRecycleBin(@NonNull View deletingView) {
+        void showRecycleBin() {
             mRecyclerBinView.show();
-            mDeletingView = deletingView;
         }
 
         void hideRecycleBin() {
             mRecyclerBinView.hide();
-            mDeletingView = null;
             mIsActive = false;
         }
 
@@ -769,10 +775,6 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
         void deactivate() {
             mRecyclerBinView.deactivate();
             mIsActive = false;
-        }
-
-        boolean checkDelete(@NonNull View deletingView) {
-            return deletingView == mDeletingView;
         }
 
         public boolean isActive() {

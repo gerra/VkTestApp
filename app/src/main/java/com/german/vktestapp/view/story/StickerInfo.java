@@ -1,6 +1,6 @@
-package com.german.vktestapp.stickers;
+package com.german.vktestapp.view.story;
 
-public class StickerLayoutInfo {
+public class StickerInfo {
     // Percentage relative to parent
     private float mX;
     private float mY;
@@ -8,6 +8,9 @@ public class StickerLayoutInfo {
     private int mHolderBackgroundHeight;
     private float mSelfRatioX = 1f;
     private float mSelfRatioY = 1f;
+
+    public StickerInfo() {
+    }
 
     public void setCenter(float x, float y) {
         mX = x;

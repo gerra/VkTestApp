@@ -2,28 +2,30 @@ package com.german.vktestapp.view;
 
 import android.support.annotation.NonNull;
 import android.support.v4.view.MotionEventCompat;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
 import com.german.vktestapp.InteractStickerListener;
 import com.german.vktestapp.utils.ViewUtils;
+import com.german.vktestapp.view.story.Vector2D;
 
 public class StickerTouchListener implements View.OnTouchListener {
+    private static final String TAG = "[StickerTouchListener]";
+
     @NonNull
     private final ActionListener mActionListener;
     @NonNull
     private final ScaleGestureDetector mScaleGestureDetector;
 
-    private float mPrevX;
-    private float mPrevY;
-    private float mPrevRawX;
-    private float mPrevRawY;
+    private float mInitialX;
+    private float mInitialY;
     private int mActivePointerId;
     private boolean mIsPureMove;
 
     public StickerTouchListener(@NonNull ActionListener actionListener) {
         mActionListener = actionListener;
-        mScaleGestureDetector = new ScaleGestureDetector(new ScaleGestureListener());
+        mScaleGestureDetector = new ScaleGestureDetector(new ScaleGestureListener(mActionListener));
     }
 
     @Override
@@ -32,24 +34,20 @@ public class StickerTouchListener implements View.OnTouchListener {
             return false;
         }
 
+        Log.d(TAG, v.hashCode() + " " + event.toString());
+
         StickerView stickerView = ((StickerView) v);
 
-//        mScaleGestureDetector.onTouchEvent(v, event);
-
-        int action = event.getAction();
-
-        int x = (int) event.getRawX();
-        int y = (int) event.getRawY();
+        mScaleGestureDetector.onTouchEvent(v, event);
 
         switch (MotionEventCompat.getActionMasked(event)) {
             case MotionEvent.ACTION_DOWN: {
                 mIsPureMove = true;
 
-                mPrevX = event.getX();
-                mPrevY = event.getY();
-                mPrevRawX = event.getRawX();
-                mPrevRawY = event.getRawY();
+                mInitialX = event.getX();
+                mInitialY = event.getY();
                 mActivePointerId = event.getPointerId(0);
+                mActionListener.onStartInteract(stickerView);
                 break;
             }
             case MotionEvent.ACTION_POINTER_DOWN: {
@@ -65,37 +63,37 @@ public class StickerTouchListener implements View.OnTouchListener {
                         mActionListener.onStickerMove(stickerView,
                                                       mIsPureMove,
                                                       currX, currY,
-                                                      currX - mPrevX, currY - mPrevY);
+                                                      currX - mInitialX, currY - mInitialY);
                     }
                 }
                 break;
             }
             case MotionEvent.ACTION_POINTER_UP: {
-                int pointerIndexPointerUp = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
-                int pointerId = event.getPointerId(pointerIndexPointerUp);
+                int pointerIndex = MotionEventCompat.getActionIndex(event);
+                int pointerId = event.getPointerId(pointerIndex);
                 if (pointerId == mActivePointerId) {
-                    int newPointerIndex = pointerIndexPointerUp == 0 ? 1 : 0;
-                    mPrevX = event.getX(newPointerIndex);
-                    mPrevY = event.getY(newPointerIndex);
+                    int newPointerIndex = pointerIndex == 0 ? 1 : 0;
+                    mInitialX = event.getX(newPointerIndex);
+                    mInitialY = event.getY(newPointerIndex);
                     mActivePointerId = event.getPointerId(newPointerIndex);
                 }
                 break;
             }
             case MotionEvent.ACTION_UP: {
                 if (ViewUtils.needToPerformClick(event)) {
+                    stickerView.performClick();
                     mActionListener.onClick(stickerView);
                 }
 
-                onStopInteract(stickerView, mPrevX, mPrevY);
+                onStopInteract(stickerView, mInitialX, mInitialY);
                 break;
             }
             case MotionEvent.ACTION_CANCEL: {
-                onStopInteract(stickerView, mPrevX, mPrevY);
+                onStopInteract(stickerView, mInitialX, mInitialY);
                 break;
             }
         }
         return true;
-
     }
 
     private void onStopInteract(@NonNull StickerView stickerView, float lastPointX, float lastPointY) {
@@ -104,7 +102,46 @@ public class StickerTouchListener implements View.OnTouchListener {
     }
 
     private class ScaleGestureListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
+        @NonNull
+        private final ActionListener mActionListener;
 
+        private float mPivotX;
+        private float mPivotY;
+        private final Vector2D mPrevSpanVector = new Vector2D();
+
+        public ScaleGestureListener(@NonNull ActionListener actionListener) {
+            mActionListener = actionListener;
+        }
+
+        @Override
+        public boolean onScaleBegin(View view, ScaleGestureDetector detector) {
+            if (!(view instanceof StickerView)) {
+                return false;
+            }
+
+            mPivotX = detector.getFocusX();
+            mPivotY = detector.getFocusY();
+            mPrevSpanVector.set(detector.getCurrentSpanVector());
+
+            mActionListener.onStickerChangeFocus((StickerView) view, mPivotX, mPivotY);
+
+            return true;
+        }
+
+        @Override
+        public boolean onScale(View view, ScaleGestureDetector detector) {
+            if (!(view instanceof StickerView)) {
+                return false;
+            }
+            float deltaFocusX = detector.getFocusX() - mPivotX;
+            float deltaFocusY = detector.getFocusY() - mPivotY;
+            float deltaScale = detector.getScaleFactor();
+            float deltaAngle = Vector2D.getAngle(mPrevSpanVector, detector.getCurrentSpanVector());
+
+            mActionListener.onStickerScaleAndRotate((StickerView) view, deltaScale, deltaAngle, deltaFocusX, deltaFocusY);
+
+            return false;
+        }
     }
 
     public interface ActionListener extends InteractStickerListener {
@@ -118,10 +155,11 @@ public class StickerTouchListener implements View.OnTouchListener {
                                boolean isPureMove,
                                float movePointX, float movePointY);
 
-        void onStickerChangeFocus(@NonNull StickerView stickerView, float focusX, float focusY);
+        void onStickerChangeFocus(@NonNull StickerView stickerView,
+                                  float focusX, float focusY);
 
-        void onStickerScale(@NonNull StickerView stickerView, float scaleFactor);
-
-        void onStickerRotate(@NonNull StickerView stickerView, float degrees);
+        void onStickerScaleAndRotate(@NonNull StickerView stickerView,
+                                     float scaleFactor, float degrees,
+                                     float deltaFocusX, float deltaFocusY);
     }
 }

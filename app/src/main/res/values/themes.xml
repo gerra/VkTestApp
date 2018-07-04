@@ -6,7 +6,7 @@
         <item name="colorAccent">@color/color_accent</item>
 
         <item name="actionBarTheme">@style/AppTheme.ActionBarTheme</item>
-        <item name="android:actionBarStyle">@style/ActionBar</item>
+        <item name="actionBarStyle">@style/ActionBarStyle</item>
 
         <item name="android:buttonStyle">@style/RobotoButtonStyle</item>
         <item name="android:textViewStyle">@style/RobotoTextViewStyle</item>
@@ -14,10 +14,6 @@
 
     <style name="AppTheme.ActionBarTheme" parent="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
         <item name="colorControlHighlight">@color/color_accent</item>
-    </style>
-
-    <style name="AppTheme.ToolbarTheme" parent="ThemeOverlay.AppCompat.Light">
-        <item name="android:fontFamily">sans-serif</item>
     </style>
 
     <style name="StickerPickerDialog" parent="Theme.Design.Light.BottomSheetDialog">

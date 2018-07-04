@@ -54,6 +54,7 @@ public class StickerPickerDialogFragment extends BottomSheetDialogFragment
 
         Toolbar toolbar = stickerPickerView.findViewById(R.id.toolbar);
         toolbar.setTitle(R.string.stickers_title);
+        toolbar.setTitleTextAppearance(getContext(), R.style.RobotoToolbarTextAppearance);
 
         if (mStickerPickerPresenter == null) {
             mStickerPickerPresenter = new StickerPickerPresenterImpl();

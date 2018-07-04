@@ -6,7 +6,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.PointF;
-import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
@@ -45,8 +44,6 @@ import java.util.concurrent.TimeUnit;
 public class StoryEditorView extends ViewGroup implements EditTextProvider {
     private static final String TAG = "[StoryEditorView]";
 
-    private static final Rect HIT_RECT = new Rect();
-    
     // Sticker should be not greater that MAX_STICKER_DIMENSION_RATIO of any dimension of this view
     private static final float MAX_STICKER_DIMENSION_RATIO = 0.2f;
 
@@ -65,10 +62,7 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
     final ViewOrderController mViewOrderController = new ViewOrderController();
     StickersController mStickersController;
 
-//    private StoryEditorTouchEventHandler mTouchEventHandler;
-//    private StickerTouchListener mStickerTouchListener = new StickerTouchListener(new ActionListenerImpl());
-    private ActionListenerImpl mActionListener = new ActionListenerImpl();
-    private MultiTouchListener mMultiTouchListener;
+    private final ActionListenerImpl mActionListener = new ActionListenerImpl();
 
     private Collection<BackgroundSetListener> mBackgroundSetListeners;
     Collection<InteractStickerListener> mInteractStickerListeners;
@@ -614,8 +608,6 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
             }
 
             mActiveSticker = stickerView;
-
-//            disableTouches(mActiveSticker);
         }
 
         @Override
@@ -720,8 +712,6 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
                     listener.onStopInteract(stickerView);
                 }
             }
-
-//            enableTouches();
         }
 
         private void translate(@NonNull StickerView stickerView, float deltaX, float deltaY) {
@@ -732,20 +722,6 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
             stickerView.setTranslationX(stickerView.getTranslationX() + mVector[0]);
             stickerView.setTranslationY(stickerView.getTranslationY() + mVector[1]);
 
-        }
-
-        private void disableTouches(@NonNull StickerView exclude) {
-            for (StickerView stickerView : mStickersController.getAllStickers()) {
-                if (stickerView != exclude) {
-                    stickerView.setEnabled(false);
-                }
-            }
-        }
-
-        private void enableTouches() {
-            for (StickerView stickerView : mStickersController.getAllStickers()) {
-                stickerView.setEnabled(true);
-            }
         }
     }
 

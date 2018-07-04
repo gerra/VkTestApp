@@ -17,4 +17,6 @@
     <dimen name="recycle_bin_size_deactivated">48dp</dimen>
     <dimen name="recycle_bin_size_activated">56dp</dimen>
     <dimen name="recycle_bin_icon_width">24dp</dimen>
+
+    <dimen name="action_bar_elevation">1dp</dimen>
 </resources>

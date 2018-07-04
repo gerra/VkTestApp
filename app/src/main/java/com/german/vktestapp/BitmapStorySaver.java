@@ -2,6 +2,7 @@ package com.german.vktestapp;
 
 import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -11,9 +12,12 @@ import java.io.OutputStream;
 public class BitmapStorySaver implements StorySaver<BitmapStory> {
     @NonNull
     private final File mStoriesFolder;
+    @Nullable
+    private final FileSaveListener mFileSaveListener;
 
-    public BitmapStorySaver(@NonNull File storiesFolder) {
+    public BitmapStorySaver(@NonNull File storiesFolder, @Nullable FileSaveListener fileSaveListener) {
         mStoriesFolder = storiesFolder;
+        mFileSaveListener = fileSaveListener;
     }
 
     @NonNull
@@ -37,10 +41,19 @@ public class BitmapStorySaver implements StorySaver<BitmapStory> {
             return StorySaveResult.FAIL;
         }
 
+        if (mFileSaveListener != null) {
+            mFileSaveListener.onSave(file);
+        }
+
         return StorySaveResult.SUCCESS;
     }
 
     private boolean createDirectory(@NonNull File file) {
         return file.exists() || file.mkdirs();
+    }
+
+    // Used for ACTION_MEDIA_SCANNER_SCAN_FILE e.g.
+    public interface FileSaveListener {
+        void onSave(@NonNull File file);
     }
 }

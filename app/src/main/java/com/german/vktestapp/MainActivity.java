@@ -87,21 +87,25 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, Environment.getExternalStorageDirectory().getAbsolutePath());
         Log.d(TAG, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
 
+        BitmapStorySaver.FileSaveListener fileSaveListener;
         File storiesDir;
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-            storiesDir = new File(Environment.getExternalStorageDirectory(), "VkTestApp/Stories");
+            storiesDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "VkTestApp/Stories");
+            fileSaveListener = new UpdateGalleryNotifier(this);
         } else {
-            storiesDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-            if (storiesDir == null) {
-                storiesDir = new File(getFilesDir(), "Stories");
+            File parent = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            if (parent != null) {
+                storiesDir = new File(parent, "Stories");
+            } else {
+                storiesDir = new File(getFilesDir(), "VkTestApp/Stories");
             }
+            fileSaveListener = null;
         }
 
-        mStoryPresenter = new StoryPresenterImpl<>(new BitmapStorySaver(storiesDir), new Handler());
+        mStoryPresenter = new StoryPresenterImpl<>(new BitmapStorySaver(storiesDir, fileSaveListener), new Handler());
 
         mStoryEditorView = findViewById(R.id.story_editor_view);
         mStoryEditorView.setActivateRecycleBinEffect(new VibrateEffect());
-
 
         Resources resources = getResources();
         TextStyleController.Style defaultStyle = new TextStyleController.Style(resources.getColor(R.color.text_style_background_color_0),
@@ -334,6 +338,22 @@ public class MainActivity extends AppCompatActivity implements
             } else if (adapterPosition == totalItemsCount - 1) {
                 outRect.right += mSidePadding;
             }
+        }
+    }
+
+    private static class UpdateGalleryNotifier implements BitmapStorySaver.FileSaveListener {
+        @NonNull
+        private final Context mAppContext;
+
+        UpdateGalleryNotifier(@NonNull Context context) {
+            mAppContext = context.getApplicationContext();
+        }
+
+        @Override
+        public void onSave(@NonNull File file) {
+            Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            intent.setData(Uri.fromFile(file));
+            mAppContext.sendBroadcast(intent);
         }
     }
 }

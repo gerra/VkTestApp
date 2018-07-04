@@ -20,7 +20,7 @@ public class VibrateEffect implements ActivateRecycleBinEffect {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(VIBRATE_DURATION,
                                                            VibrationEffect.DEFAULT_AMPLITUDE));
-        } else{
+        } else {
             vibrator.vibrate(VIBRATE_DURATION);
         }
     }

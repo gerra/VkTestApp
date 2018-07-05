@@ -27,10 +27,10 @@ import android.widget.ImageView;
 
 import com.german.vktestapp.ActivateRecycleBinEffect;
 import com.german.vktestapp.BackgroundSetListener;
-import com.german.vktestapp.EditTextProvider;
 import com.german.vktestapp.InteractStickerListener;
 import com.german.vktestapp.R;
 import com.german.vktestapp.backgrounds.Background;
+import com.german.vktestapp.textstyling.EditTextProvider;
 import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.RecyclerBinView;
 import com.german.vktestapp.view.StickerTouchListener;

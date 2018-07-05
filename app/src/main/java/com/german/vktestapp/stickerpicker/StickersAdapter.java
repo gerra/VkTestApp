@@ -49,7 +49,7 @@ public class StickersAdapter extends RecyclerView.Adapter<StickersAdapter.Sticke
 
     static class StickerViewHolder extends RecyclerView.ViewHolder {
         @NonNull
-        private StickerPickListener mStickerPickListener;
+        private final StickerPickListener mStickerPickListener;
 
         public StickerViewHolder(@NonNull ImageView stickerView,
                                  @NonNull StickerPickListener stickerPickListener) {

@@ -393,17 +393,6 @@ public class StoryEditorTouchEventHandler {
 //        view.setTranslationY(view.getTranslationY() + deltaVector[1]);
 //    }
 //
-//    private class TransformInfo {
-//        float deltaX;
-//        float deltaY;
-//        float deltaScale;
-//        float deltaAngle;
-//        float pivotX;
-//        float pivotY;
-//        float minimumScale;
-//        float maximumScale;
-//    }
-//
 //    private static class State {
 //        @Nullable
 //        StickerView mActiveSticker;

@@ -19,4 +19,9 @@
     <dimen name="recycle_bin_icon_width">24dp</dimen>
 
     <dimen name="action_bar_elevation">1dp</dimen>
+
+    <dimen name="text_style_shadow_radius">0.5dp</dimen>
+    <dimen name="text_style_shadow_dy">0.5dp</dimen>
+
+    <dimen name="text_style_background_radius">4dp</dimen>
 </resources>

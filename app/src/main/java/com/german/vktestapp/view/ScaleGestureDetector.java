@@ -19,14 +19,17 @@ public class ScaleGestureDetector {
 
     public static class SimpleOnScaleGestureListener implements OnScaleGestureListener {
 
+        @Override
         public boolean onScale(View view, ScaleGestureDetector detector) {
             return false;
         }
 
+        @Override
         public boolean onScaleBegin(View view, ScaleGestureDetector detector) {
             return true;
         }
 
+        @Override
         public void onScaleEnd(View view, ScaleGestureDetector detector) {
             // Intentionally empty
         }
@@ -61,7 +64,6 @@ public class ScaleGestureDetector {
     private float mScaleFactor;
     private float mCurrPressure;
     private float mPrevPressure;
-    private long mTimeDelta;
 
     private boolean mInvalidGesture;
 
@@ -101,7 +103,6 @@ public class ScaleGestureDetector {
                     // We have a new multi-finger gesture
                     if (mPrevEvent != null) mPrevEvent.recycle();
                     mPrevEvent = MotionEvent.obtain(event);
-                    mTimeDelta = 0;
 
                     int index1 = event.getActionIndex();
                     int index0 = event.findPointerIndex(mActiveId0);
@@ -300,7 +301,7 @@ public class ScaleGestureDetector {
 
         mFocusX = cx0 + cvx * 0.5f;
         mFocusY = cy0 + cvy * 0.5f;
-        mTimeDelta = curr.getEventTime() - prev.getEventTime();
+
         mCurrPressure = curr.getPressure(currIndex0) + curr.getPressure(currIndex1);
         mPrevPressure = prev.getPressure(prevIndex0) + prev.getPressure(prevIndex1);
     }
@@ -378,26 +379,6 @@ public class ScaleGestureDetector {
     }
 
     /**
-     * Return the current x distance between the two pointers forming the
-     * gesture in progress.
-     *
-     * @return Distance between pointers in pixels.
-     */
-    public float getCurrentSpanX() {
-        return mCurrFingerDiffX;
-    }
-
-    /**
-     * Return the current y distance between the two pointers forming the
-     * gesture in progress.
-     *
-     * @return Distance between pointers in pixels.
-     */
-    public float getCurrentSpanY() {
-        return mCurrFingerDiffY;
-    }
-
-    /**
      * Return the previous distance between the two pointers forming the
      * gesture in progress.
      *
@@ -412,56 +393,10 @@ public class ScaleGestureDetector {
         return mPrevLen;
     }
 
-    /**
-     * Return the previous x distance between the two pointers forming the
-     * gesture in progress.
-     *
-     * @return Previous distance between pointers in pixels.
-     */
-    public float getPreviousSpanX() {
-        return mPrevFingerDiffX;
-    }
-
-    /**
-     * Return the previous y distance between the two pointers forming the
-     * gesture in progress.
-     *
-     * @return Previous distance between pointers in pixels.
-     */
-    public float getPreviousSpanY() {
-        return mPrevFingerDiffY;
-    }
-
-    /**
-     * Return the scaling factor from the previous scale event to the current
-     * event. This value is defined as
-     * ({@link #getCurrentSpan()} / {@link #getPreviousSpan()}).
-     *
-     * @return The current scaling factor.
-     */
     public float getScaleFactor() {
         if (mScaleFactor == -1) {
             mScaleFactor = getCurrentSpan() / getPreviousSpan();
         }
         return mScaleFactor;
-    }
-
-    /**
-     * Return the time difference in milliseconds between the previous
-     * accepted scaling event and the current scaling event.
-     *
-     * @return Time difference since the last scaling event in milliseconds.
-     */
-    public long getTimeDelta() {
-        return mTimeDelta;
-    }
-
-    /**
-     * Return the event time of the current event being processed.
-     *
-     * @return Current event time in milliseconds.
-     */
-    public long getEventTime() {
-        return mCurrEvent.getEventTime();
     }
 }

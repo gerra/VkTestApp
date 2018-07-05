@@ -13,7 +13,7 @@ public class SimpleBackground extends Background {
         mDrawable = drawable;
     }
 
-    @Nullable
+    @NonNull
     @Override
     public Drawable getThumb(@NonNull Context context) {
         return mDrawable;

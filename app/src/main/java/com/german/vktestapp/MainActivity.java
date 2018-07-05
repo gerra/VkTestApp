@@ -35,6 +35,10 @@ import com.german.vktestapp.backgrounds.BackgroundsHelper;
 import com.german.vktestapp.backgrounds.SimpleBackground;
 import com.german.vktestapp.stickerpicker.StickerPickListener;
 import com.german.vktestapp.stickerpicker.StickerPickerDialogFragment;
+import com.german.vktestapp.textstyling.RoundedBackgroundSpan;
+import com.german.vktestapp.textstyling.ShadowTextStyle;
+import com.german.vktestapp.textstyling.SpanStyle;
+import com.german.vktestapp.textstyling.TextStyleController;
 import com.german.vktestapp.utils.PermissionsUtils;
 import com.german.vktestapp.utils.Utils;
 import com.german.vktestapp.view.StickerView;
@@ -108,13 +112,26 @@ public class MainActivity extends AppCompatActivity implements
         mStoryEditorView.setActivateRecycleBinEffect(new VibrateEffect());
 
         Resources resources = getResources();
-        TextStyleController.Style defaultStyle = new TextStyleController.Style(resources.getColor(R.color.text_style_background_color_0),
-                                                                             resources.getColor(R.color.text_style_text_color_0));
-        TextStyleController.Style firstStyle = new TextStyleController.Style(resources.getColor(R.color.text_style_background_color_1),
-                                                                             resources.getColor(R.color.text_style_text_color_1));
-        TextStyleController.Style secondStyle = new TextStyleController.Style(resources.getColor(R.color.text_style_background_color_2),
-                                                                              resources.getColor(R.color.text_style_text_color_2));
-        mTextStyleController = new TextStyleController(Arrays.asList(defaultStyle, firstStyle, secondStyle));
+
+        int shadowColor = resources.getColor(R.color.text_style_shadow);
+        float shadowRadius = resources.getDimension(R.dimen.text_style_shadow_radius);
+        float shadowDy = resources.getDimension(R.dimen.text_style_shadow_dy);
+
+        int backgroundRadius = resources.getDimensionPixelSize(R.dimen.text_style_background_radius);
+
+        int secondStyleBGColor = resources.getColor(R.color.text_style_background_color_1);
+        int thirdStyleBGColor = resources.getColor(R.color.text_style_background_color_2);
+
+        int firstStyleTextColor = resources.getColor(R.color.text_style_text_color_2);
+
+        SpanStyle firstStyle = () -> new Object[] { new ShadowTextStyle(firstStyleTextColor, shadowRadius, shadowDy, shadowColor) };
+        SpanStyle secondStyle = () -> new Object[] { new RoundedBackgroundSpan(secondStyleBGColor, backgroundRadius, shadowRadius, shadowDy, shadowColor) };
+        SpanStyle thirdStyle = () -> new Object[] {
+                new ShadowTextStyle(firstStyleTextColor, shadowRadius, shadowDy, shadowColor),
+                new RoundedBackgroundSpan(thirdStyleBGColor, backgroundRadius, shadowRadius, shadowDy, shadowColor)
+        };
+
+        mTextStyleController = new TextStyleController(Arrays.asList(firstStyle, secondStyle, thirdStyle));
 
         setActionBar();
         setBackgroundsPanel(0);

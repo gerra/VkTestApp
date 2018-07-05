@@ -1,6 +1,8 @@
 package com.german.vktestapp.stickerpicker;
 
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
@@ -28,6 +30,7 @@ public class StickersAdapter extends RecyclerView.Adapter<StickersAdapter.Sticke
     @Override
     public StickerViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         ImageView view = new ImageView(parent.getContext());
+        view.setAdjustViewBounds(true);
         return new StickerViewHolder(view, mStickerPickListener);
     }
 
@@ -48,14 +51,25 @@ public class StickersAdapter extends RecyclerView.Adapter<StickersAdapter.Sticke
     }
 
     static class StickerViewHolder extends RecyclerView.ViewHolder {
-        @NonNull
-        private final StickerPickListener mStickerPickListener;
-
         public StickerViewHolder(@NonNull ImageView stickerView,
                                  @NonNull StickerPickListener stickerPickListener) {
             super(stickerView);
+            stickerView.setOnClickListener(view -> {
+                if (!(view instanceof ImageView)) {
+                    return;
+                }
+                ImageView imageView = (ImageView) view;
+                Drawable drawable = imageView.getDrawable();
+                if (!(drawable instanceof BitmapDrawable)) {
+                    return;
+                }
+                BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+                Bitmap bitmap = bitmapDrawable.getBitmap();
+                if (bitmap != null) {
+                    stickerPickListener.onStickerPicked(bitmap);
+                }
+            });
 
-            mStickerPickListener = stickerPickListener;
         }
 
         void setSticker(@NonNull StickerProvider stickerProvider) {
@@ -68,7 +82,6 @@ public class StickersAdapter extends RecyclerView.Adapter<StickersAdapter.Sticke
             }
 
             ((ImageView) itemView).setImageBitmap(bm);
-            itemView.setOnClickListener(v -> mStickerPickListener.onStickerPicked(bm));
         }
     }
 }

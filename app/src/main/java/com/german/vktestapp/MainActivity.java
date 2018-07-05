@@ -50,17 +50,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-// TODO: change text style
-// TODO: save state
-// TODO: save
-// TODO: only portrait?
-// TODO: nice background picker?
-// TODO: fix sticker picker?
 public class MainActivity extends AppCompatActivity implements
         StoryView, StickerPickListener, BackgroundPickListener, AddBackgroundClickListener {
     private static final String TAG = "[MainActivity]";
-
-    private static final String KEY_SELECTED_POSITION = "selectedPosition";
 
     private static final String PERMISSION_READ_STORAGE = Manifest.permission.READ_EXTERNAL_STORAGE;
     private static final String PERMISSION_WRITE_STORAGE = Manifest.permission.WRITE_EXTERNAL_STORAGE;

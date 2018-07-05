@@ -592,7 +592,7 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
 
         @Override
         public void onClick(@NonNull StickerView stickerView) {
-            performClick();
+//            performClick();
         }
 
         @Override
@@ -649,9 +649,11 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
                                       float movePointX, float movePointY) {
             if (isPureMove) {
                 PointF relativeToParent = ViewUtils.getPointRelativeToParent(stickerView, movePointX, movePointY);
-                if (ViewUtils.isPointInView(mRecyclerBinView,
-                                            (int) relativeToParent.x,
-                                            (int) relativeToParent.y)) {
+                if (mRecyclerBinController.isActive()
+                        && ViewUtils.isPointInView(mRecyclerBinView,
+                                                   (int) relativeToParent.x,
+                                                   (int) relativeToParent.y)) {
+                    Log.d(TAG, "remove sticker: " + stickerView);
                     removeView(stickerView);
                 }
             }

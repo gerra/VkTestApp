@@ -22,6 +22,7 @@ public class StickerTouchListener implements View.OnTouchListener {
     private float mInitialY;
     private int mActivePointerId;
     private boolean mIsPureMove;
+    private boolean mStreamIsFinished;
 
     public StickerTouchListener(@NonNull ActionListener actionListener) {
         mActionListener = actionListener;
@@ -34,7 +35,11 @@ public class StickerTouchListener implements View.OnTouchListener {
             return false;
         }
 
-        Log.d(TAG, v.hashCode() + " " + event.toString());
+        // If our view was deleted on ACTION_UP e.g.
+        if (mStreamIsFinished
+                && MotionEventCompat.getActionMasked(event) != MotionEvent.ACTION_DOWN) {
+            return true;
+        }
 
         StickerView stickerView = ((StickerView) v);
 
@@ -43,6 +48,7 @@ public class StickerTouchListener implements View.OnTouchListener {
         switch (MotionEventCompat.getActionMasked(event)) {
             case MotionEvent.ACTION_DOWN: {
                 mIsPureMove = true;
+                mStreamIsFinished = false;
 
                 mInitialX = event.getX();
                 mInitialY = event.getY();
@@ -97,6 +103,7 @@ public class StickerTouchListener implements View.OnTouchListener {
     }
 
     private void onStopInteract(@NonNull StickerView stickerView, float lastPointX, float lastPointY) {
+        mStreamIsFinished = true;
         mActionListener.onStickerStopMove(stickerView, mIsPureMove, lastPointX, lastPointY);
         mActionListener.onStopInteract(stickerView);
     }

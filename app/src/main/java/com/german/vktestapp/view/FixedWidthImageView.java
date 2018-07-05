@@ -6,13 +6,13 @@ import android.support.annotation.Px;
 import android.support.v7.widget.AppCompatImageView;
 
 // Fixed width
-public class RecyclerBinImageView extends AppCompatImageView {
+public class FixedWidthImageView extends AppCompatImageView {
     private static final int UNSET = -1;
 
     @Px
     private int mWidth;
 
-    public RecyclerBinImageView(Context context) {
+    public FixedWidthImageView(Context context) {
         super(context);
     }
 

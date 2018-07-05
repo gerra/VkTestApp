@@ -20,7 +20,7 @@ public class RecyclerBinView extends FrameLayout implements BackgroundSetListene
     private int mDeactivatedSize;
     private int mActivatedSize;
 
-    private RecyclerBinImageView mIconView;
+    private FixedWidthImageView mIconView;
 
     private int mState = STATE_NOT_SHOWN;
 
@@ -45,7 +45,7 @@ public class RecyclerBinView extends FrameLayout implements BackgroundSetListene
 
         int iconWidth = context.getResources()
                 .getDimensionPixelSize(R.dimen.recycle_bin_icon_width);
-        mIconView = new RecyclerBinImageView(context);
+        mIconView = new FixedWidthImageView(context);
         mIconView.setLayoutParams(new LayoutParams(0, 0, Gravity.CENTER));
         mIconView.setWidth(iconWidth);
 

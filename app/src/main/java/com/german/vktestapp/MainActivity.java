@@ -118,17 +118,20 @@ public class MainActivity extends AppCompatActivity implements
         float shadowDy = resources.getDimension(R.dimen.text_style_shadow_dy);
 
         int backgroundRadius = resources.getDimensionPixelSize(R.dimen.text_style_background_radius);
+        float backgroundSidePadding = resources.getDimension(R.dimen.text_style_background_side_padding);
 
-        int secondStyleBGColor = resources.getColor(R.color.text_style_background_color_1);
-        int thirdStyleBGColor = resources.getColor(R.color.text_style_background_color_2);
+        int secondStyleBGColor = resources.getColor(R.color.text_style_2_background_color);
+        int thirdStyleBGColor = resources.getColor(R.color.text_style_3_background_color);
 
-        int firstStyleTextColor = resources.getColor(R.color.text_style_text_color_2);
+        int firstStyleTextColor = resources.getColor(R.color.text_style_1_text_color);
 
         SpanStyle firstStyle = () -> new Object[] { new ShadowTextStyle(firstStyleTextColor, shadowRadius, shadowDy, shadowColor) };
-        SpanStyle secondStyle = () -> new Object[] { new RoundedBackgroundSpan(secondStyleBGColor, backgroundRadius, shadowRadius, shadowDy, shadowColor) };
+        SpanStyle secondStyle = () -> new Object[] {
+                new RoundedBackgroundSpan(backgroundSidePadding, secondStyleBGColor, backgroundRadius, shadowRadius, shadowDy, shadowColor)
+        };
         SpanStyle thirdStyle = () -> new Object[] {
                 new ShadowTextStyle(firstStyleTextColor, shadowRadius, shadowDy, shadowColor),
-                new RoundedBackgroundSpan(thirdStyleBGColor, backgroundRadius, shadowRadius, shadowDy, shadowColor)
+                new RoundedBackgroundSpan(backgroundSidePadding, thirdStyleBGColor, backgroundRadius, shadowRadius, shadowDy, shadowColor)
         };
 
         mTextStyleController = new TextStyleController(Arrays.asList(firstStyle, secondStyle, thirdStyle));

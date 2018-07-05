@@ -22,15 +22,20 @@ public class RoundedBackgroundSpan implements LineBackgroundSpan {
     private final Path mBorderPath = new Path();
     private final Paint mPathPaint = new Paint();
 
+    private final float mSidePadding;
+
     private int mStartLine = -1;
     private int mPrevLine;
     private int mLastLine;
 
-    public RoundedBackgroundSpan(@ColorInt int color,
+    public RoundedBackgroundSpan(float sidePadding,
+                                 @ColorInt int color,
                                  float backgroundRadius,
                                  float shadowRadius,
                                  float shadowDy,
                                  @ColorInt int shadowColor) {
+        mSidePadding = sidePadding;
+
         mPathPaint.setPathEffect(new CornerPathEffect(backgroundRadius));
         mPathPaint.setColor(color);
         mPathPaint.setShadowLayer(shadowRadius, 0, shadowDy, shadowColor);
@@ -74,16 +79,17 @@ public class RoundedBackgroundSpan implements LineBackgroundSpan {
             return;
         }
 
+        int saveCount = canvas.save();
+
         canvas.getClipBounds(RECT);
-        RECT.inset(-50, -50);
+        RECT.inset((int) (-mSidePadding * 2) - 50, -50);
         canvas.clipRect(RECT);
 
         calculatePath();
 
         canvas.drawPath(mBorderPath, mPathPaint);
 
-        RECT.inset(50, 50);
-        canvas.clipRect(RECT);
+        canvas.restoreToCount(saveCount);
     }
 
     private void calculatePath() {
@@ -96,12 +102,12 @@ public class RoundedBackgroundSpan implements LineBackgroundSpan {
             int bottom = mBottoms.get(i);
 
             if (i == mStartLine) {
-                mBorderPath.moveTo(right, top);
+                mBorderPath.moveTo(right + mSidePadding, top);
             } else {
-                mBorderPath.lineTo(right, top);
+                mBorderPath.lineTo(right + mSidePadding, top);
             }
 
-            mBorderPath.lineTo(right, bottom);
+            mBorderPath.lineTo(right + mSidePadding, bottom);
         }
 
         // Left side
@@ -110,8 +116,8 @@ public class RoundedBackgroundSpan implements LineBackgroundSpan {
             int top = mTops.get(i);
             int bottom = mBottoms.get(i);
 
-            mBorderPath.lineTo(left, bottom);
-            mBorderPath.lineTo(left, top);
+            mBorderPath.lineTo(left - mSidePadding, bottom);
+            mBorderPath.lineTo(left - mSidePadding, top);
         }
 
         mBorderPath.close();

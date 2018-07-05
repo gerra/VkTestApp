@@ -18,12 +18,12 @@
     <color name="recycle_bin_ring_color">#528bcc</color>
 
     <color name="text_style_background_color_0">#0000</color>
-    <color name="text_style_background_color_1">#ffffffff</color>
-    <color name="text_style_background_color_2">#5cffffff</color>
+    <color name="text_style_2_background_color">#ffffffff</color>
+    <color name="text_style_3_background_color">#5cffffff</color>
 
     <color name="text_style_text_color_0">#000</color>
     <color name="text_style_text_color_1">#000</color>
-    <color name="text_style_text_color_2">#fff</color>
+    <color name="text_style_1_text_color">#fff</color>
 
     <color name="text_style_shadow">#1f000000</color>
 </resources>

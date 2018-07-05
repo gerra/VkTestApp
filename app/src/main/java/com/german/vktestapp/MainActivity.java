@@ -23,7 +23,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -74,14 +73,6 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        Log.d(TAG, getExternalFilesDir(Environment.DIRECTORY_PICTURES).getAbsolutePath());
-        Log.d(TAG, getFilesDir().getAbsolutePath());
-        Log.d(TAG, getCacheDir().getAbsolutePath());
-        Log.d(TAG, getDir("VkTestApp", MODE_PRIVATE).getAbsolutePath());
-        Log.d(TAG, Environment.getDataDirectory().getAbsolutePath());
-        Log.d(TAG, Environment.getExternalStorageDirectory().getAbsolutePath());
-        Log.d(TAG, Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
 
         BitmapStorySaver.FileSaveListener fileSaveListener;
         File storiesDir;

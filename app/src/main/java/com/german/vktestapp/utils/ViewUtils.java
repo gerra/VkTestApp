@@ -79,11 +79,17 @@ public class ViewUtils {
 
     @NonNull
     public static PointF getPointRelativeToParent(@NonNull View view, float x, float y) {
-        VECTOR[0] = x;
-        VECTOR[1] = y;
-        view.getMatrix()
-                .mapPoints(VECTOR);
-        return new PointF(VECTOR[0] + view.getLeft(), VECTOR[1] + view.getTop());
+        float v0;
+        float v1;
+        synchronized (VECTOR) {
+            VECTOR[0] = x;
+            VECTOR[1] = y;
+            view.getMatrix()
+                    .mapPoints(VECTOR);
+            v0 = VECTOR[0];
+            v1 = VECTOR[1];
+        }
+        return new PointF(v0 + view.getLeft(), v1 + view.getTop());
     }
 
     @SuppressWarnings("WeakerAccess")

@@ -1,26 +1,34 @@
 package com.german.vktestapp.view;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.drawable.Drawable;
+import android.support.annotation.NonNull;
 import android.support.v7.widget.AppCompatImageView;
-import android.view.MotionEvent;
 
-public class StickerView extends AppCompatImageView {
+import com.german.vktestapp.view.story.StaticDrawable;
+
+public class StickerView extends AppCompatImageView implements StaticDrawable {
     public StickerView(Context context) {
         super(context);
     }
 
     @Override
-    public boolean dispatchTouchEvent(MotionEvent event) {
-        return !isEnabled() || super.dispatchTouchEvent(event);
-    }
+    public void drawStatic(@NonNull Canvas canvas) {
+        Drawable drawable = getDrawable();
+        if (drawable == null) {
+            return;
+        }
 
-    @Override
-    public boolean onFilterTouchEventForSecurity(MotionEvent event) {
-        return isEnabled();
-    }
-
-    @Override
-    public boolean performClick() {
-        return super.performClick();
+        Matrix drawMatrix = getImageMatrix();
+        if (drawMatrix == null) {
+            drawable.draw(canvas);
+        } else {
+            int count = canvas.save();
+            canvas.concat(drawMatrix);
+            drawable.draw(canvas);
+            canvas.restoreToCount(count);
+        }
     }
 }

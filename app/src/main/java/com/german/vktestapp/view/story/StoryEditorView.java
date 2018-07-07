@@ -1,20 +1,18 @@
 package com.german.vktestapp.view.story;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
 import android.support.v4.view.MotionEventCompat;
-import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
@@ -22,7 +20,6 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.ImageView;
 
 import com.german.vktestapp.ActivateRecycleBinEffect;
@@ -30,7 +27,8 @@ import com.german.vktestapp.BackgroundSetListener;
 import com.german.vktestapp.InteractStickerListener;
 import com.german.vktestapp.R;
 import com.german.vktestapp.backgrounds.Background;
-import com.german.vktestapp.textstyling.EditTextProvider;
+import com.german.vktestapp.textstyling.Styleable;
+import com.german.vktestapp.textstyling.StyleableProvider;
 import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.RecyclerBinView;
 import com.german.vktestapp.view.StickerTouchListener;
@@ -41,7 +39,7 @@ import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("deprecation")
-public class StoryEditorView extends ViewGroup implements EditTextProvider {
+public class StoryEditorView extends ViewGroup implements StyleableProvider {
     private static final String TAG = "[StoryEditorView]";
 
     // Sticker should be not greater that MAX_STICKER_DIMENSION_RATIO of any dimension of this view
@@ -51,7 +49,7 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
 
     private Background mBackground;
     private ImageView mBackgroundImageView;
-    private EditText mEditText;
+    private StoryEditText mEditText;
     RecyclerBinView mRecyclerBinView;
 
     RecycleBinState mRecyclerBinController;
@@ -82,12 +80,6 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
         init(context);
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    public StoryEditorView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
-        init(context);
-    }
-
     private void init(@NonNull Context context) {
         setClipChildren(false);
         setFocusable(true);
@@ -111,7 +103,7 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
     }
 
     private void initEditText(@NonNull Context context) {
-        mEditText = (EditText) LayoutInflater.from(context)
+        mEditText = (StoryEditText) LayoutInflater.from(context)
                 .inflate(R.layout.story_edit_text, this, false);
         ViewUtils.setEditTextGravity(mEditText, Gravity.START, Gravity.CENTER);
         mEditText.setOnFocusChangeListener((v, hasFocus) -> {
@@ -516,9 +508,6 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
     private void hideKeyboard() {
         ViewUtils.hideKeyboard(this);
         mEditText.clearFocus();
-        if (TextUtils.isEmpty(mEditText.getText())) {
-            mEditText.setVisibility(INVISIBLE);
-        }
     }
 
     @Nullable
@@ -541,38 +530,48 @@ public class StoryEditorView extends ViewGroup implements EditTextProvider {
             return null;
         }
 
-        // Save state
-        int editTextVisibility = mEditText.getVisibility();
-        boolean editTextCursorVisible = mEditText.isCursorVisible();
-        int recycleBinVisibility = mRecyclerBinView.getVisibility();
+        int width = 1080;
+        float scale = 1f * width / getMeasuredWidth();
 
-        // Hide unnecessary views
-        if (mEditText.getVisibility() == VISIBLE
-                && TextUtils.isEmpty(mEditText.getText())) {
-            mEditText.setVisibility(INVISIBLE);
-        }
-        if (mEditText.getVisibility() == VISIBLE) {
-            mEditText.setCursorVisible(false);
-        }
-        if (mRecyclerBinView.getVisibility() == VISIBLE) {
-            mRecyclerBinView.setVisibility(INVISIBLE);
+        int height = (int) (width * (1f * getMeasuredHeight() / getMeasuredWidth()));
+
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        int initialCount = canvas.save();
+
+        canvas.scale(scale, scale);
+
+        Drawable bd = mBackgroundImageView != null
+                ? mBackgroundImageView.getDrawable()
+                : null;
+
+        if (bd != null) {
+            int count = canvas.save();
+            canvas.concat(mBackgroundImageView.getImageMatrix());
+            bd.draw(canvas);
+            canvas.restoreToCount(count);
         }
 
-        setDrawingCacheEnabled(true);
-        Bitmap bitmap = getDrawingCache().copy(Bitmap.Config.ARGB_8888, false);
-        setDrawingCacheEnabled(false);
+        int childCount = getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View child = getChildAt(getChildDrawingOrder(childCount, i));
+            if (child instanceof StaticDrawable) {
+                int sc = canvas.save();
+                canvas.translate(child.getLeft(), child.getTop());
+                canvas.concat(child.getMatrix());
+                ((StaticDrawable) child).drawStatic(canvas);
+                canvas.restoreToCount(sc);
+            }
+        }
 
-        // Restore state
-        mEditText.setVisibility(editTextVisibility);
-        mEditText.setCursorVisible(editTextCursorVisible);
-        mRecyclerBinView.setVisibility(recycleBinVisibility);
+        canvas.restoreToCount(initialCount);
 
         return bitmap;
     }
 
     @Nullable
     @Override
-    public EditText getEditText() {
+    public Styleable getStyleable() {
         return mEditText;
     }
 

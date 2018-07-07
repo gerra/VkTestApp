@@ -1,4 +1,4 @@
-package com.german.vktestapp;
+package com.german.vktestapp.editor;
 
 import android.support.annotation.NonNull;
 

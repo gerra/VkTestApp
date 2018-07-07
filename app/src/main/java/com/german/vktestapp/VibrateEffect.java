@@ -6,6 +6,8 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.support.annotation.NonNull;
 
+import com.german.vktestapp.editor.ActivateRecycleBinEffect;
+
 import java.util.concurrent.TimeUnit;
 
 public class VibrateEffect implements ActivateRecycleBinEffect {

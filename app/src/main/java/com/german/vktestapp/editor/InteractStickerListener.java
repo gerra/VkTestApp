@@ -1,8 +1,6 @@
-package com.german.vktestapp;
+package com.german.vktestapp.editor;
 
 import android.support.annotation.NonNull;
-
-import com.german.vktestapp.view.StickerView;
 
 public interface InteractStickerListener {
     void onStartInteract(@NonNull StickerView stickerView);

@@ -3,6 +3,7 @@ package com.german.vktestapp;
 import android.support.annotation.NonNull;
 
 import com.german.vktestapp.backgrounds.Background;
+import com.german.vktestapp.editor.BackgroundSetListener;
 import com.german.vktestapp.textstyling.Style;
 import com.german.vktestapp.textstyling.StyleableProvider;
 import com.german.vktestapp.textstyling.TextStyleController;

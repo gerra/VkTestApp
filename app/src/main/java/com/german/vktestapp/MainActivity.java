@@ -34,6 +34,9 @@ import com.german.vktestapp.backgrounds.BackgroundPickListener;
 import com.german.vktestapp.backgrounds.BackgroundsAdapter;
 import com.german.vktestapp.backgrounds.BackgroundsHelper;
 import com.german.vktestapp.backgrounds.SimpleBackground;
+import com.german.vktestapp.editor.InteractStickerListener;
+import com.german.vktestapp.editor.StickerView;
+import com.german.vktestapp.editor.StoryEditorView;
 import com.german.vktestapp.stickerpicker.StickerPickListener;
 import com.german.vktestapp.stickerpicker.StickerPickerDialogFragment;
 import com.german.vktestapp.textstyling.Style;
@@ -41,8 +44,6 @@ import com.german.vktestapp.textstyling.StyleableProvider;
 import com.german.vktestapp.utils.PermissionsUtils;
 import com.german.vktestapp.utils.Utils;
 import com.german.vktestapp.utils.ViewUtils;
-import com.german.vktestapp.view.StickerView;
-import com.german.vktestapp.view.story.StoryEditorView;
 
 import java.io.File;
 import java.util.Arrays;

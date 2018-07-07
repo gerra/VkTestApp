@@ -10,12 +10,12 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
-        <com.german.vktestapp.view.story.StoryEditorView
+        <com.german.vktestapp.editor.StoryEditorView
             android:layout_gravity="center"
             android:id="@+id/story_editor_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-            <com.german.vktestapp.view.RecyclerBinView
+            <com.german.vktestapp.editor.RecyclerBinView
                 android:layout_width="@dimen/recycle_bin_size_deactivated"
                 android:layout_height="@dimen/recycle_bin_size_deactivated"
                 android:layout_marginBottom="26dp"
@@ -25,7 +25,7 @@
                 android:background="@drawable/recycle_bin_background"
                 tools:visibility="visible"
                 tools:src="@drawable/ic_fab_trash"/>
-        </com.german.vktestapp.view.story.StoryEditorView>
+        </com.german.vktestapp.editor.StoryEditorView>
     </FrameLayout>
 
     <View

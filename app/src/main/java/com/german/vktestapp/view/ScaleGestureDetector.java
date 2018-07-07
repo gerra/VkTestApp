@@ -4,7 +4,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
-import com.german.vktestapp.view.story.Vector2D;
+import com.german.vktestapp.utils.Vector2D;
 
 public class ScaleGestureDetector {
     private static final String TAG = "ScaleGestureDetector";

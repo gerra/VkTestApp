@@ -1,4 +1,4 @@
-package com.german.vktestapp.view.story;
+package com.german.vktestapp.editor;
 
 public class StickerInfo {
     private int mHolderBackgroundWidth;

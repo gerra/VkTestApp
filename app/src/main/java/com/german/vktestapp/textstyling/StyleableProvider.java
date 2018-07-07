@@ -1,8 +1,8 @@
 package com.german.vktestapp.textstyling;
 
-import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 public interface StyleableProvider {
-    @NonNull
+    @Nullable
     Styleable getStyleable();
 }

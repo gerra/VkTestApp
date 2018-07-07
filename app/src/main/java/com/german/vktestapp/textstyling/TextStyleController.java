@@ -37,7 +37,9 @@ public class TextStyleController {
 
     protected void clearStyle() {
         Styleable styleable = mStyleableProvider.getStyleable();
-        styleable.clearStyle();
+        if (styleable != null) {
+            styleable.clearStyle();
+        }
     }
 
     protected boolean checkStyleCanBeSet() {
@@ -45,7 +47,9 @@ public class TextStyleController {
     }
 
     private void setStyle(@NonNull Style style) {
-        mStyleableProvider.getStyleable()
-                .setStyle(style);
+        Styleable styleable = mStyleableProvider.getStyleable();
+        if (styleable != null) {
+            styleable.setStyle(style);
+        }
     }
 }

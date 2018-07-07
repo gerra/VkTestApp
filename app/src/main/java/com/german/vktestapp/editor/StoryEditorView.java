@@ -1,4 +1,4 @@
-package com.german.vktestapp.view.story;
+package com.german.vktestapp.editor;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -9,9 +9,9 @@ import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Parcelable;
+import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.UiThread;
 import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -22,17 +22,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
-import com.german.vktestapp.ActivateRecycleBinEffect;
-import com.german.vktestapp.BackgroundSetListener;
-import com.german.vktestapp.InteractStickerListener;
 import com.german.vktestapp.R;
 import com.german.vktestapp.backgrounds.Background;
 import com.german.vktestapp.textstyling.Styleable;
 import com.german.vktestapp.textstyling.StyleableProvider;
+import com.german.vktestapp.utils.ViewOrderController;
 import com.german.vktestapp.utils.ViewUtils;
-import com.german.vktestapp.view.RecyclerBinView;
-import com.german.vktestapp.view.StickerTouchListener;
-import com.german.vktestapp.view.StickerView;
+import com.german.vktestapp.view.StaticDrawable;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -94,10 +90,7 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
     }
 
     private void initBackgroundImageView(@NonNull Context context) {
-        mBackgroundImageView = new ImageView(context);
-        mBackgroundImageView.setLayoutParams(new ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT,
-                                                                        LayoutParams.WRAP_CONTENT));
-        mBackgroundImageView.setAdjustViewBounds(true);
+        mBackgroundImageView = new BackgroundImageView(context);
         addView(mBackgroundImageView);
         mViewOrderController.moveToBottom(mBackgroundImageView);
     }
@@ -523,7 +516,7 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
         return null;
     }
 
-    @UiThread
+    @MainThread
     @Nullable
     public Bitmap getBitmap() {
         if (getMeasuredWidth() <= 0 || getMeasuredHeight() <= 0) {
@@ -540,17 +533,6 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
         int initialCount = canvas.save();
 
         canvas.scale(scale, scale);
-
-        Drawable bd = mBackgroundImageView != null
-                ? mBackgroundImageView.getDrawable()
-                : null;
-
-        if (bd != null) {
-            int count = canvas.save();
-            canvas.concat(mBackgroundImageView.getImageMatrix());
-            bd.draw(canvas);
-            canvas.restoreToCount(count);
-        }
 
         int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {

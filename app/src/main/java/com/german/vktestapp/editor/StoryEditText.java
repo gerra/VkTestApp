@@ -1,4 +1,4 @@
-package com.german.vktestapp.view.story;
+package com.german.vktestapp.editor;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -23,6 +23,7 @@ import com.german.vktestapp.R;
 import com.german.vktestapp.textstyling.Style;
 import com.german.vktestapp.textstyling.Styleable;
 import com.german.vktestapp.view.LoseFocusEditText;
+import com.german.vktestapp.view.StaticDrawable;
 
 public class StoryEditText extends LoseFocusEditText
         implements StaticDrawable, Styleable {

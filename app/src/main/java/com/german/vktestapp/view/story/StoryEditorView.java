@@ -81,11 +81,11 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
     }
 
     private void init(@NonNull Context context) {
-        setClipChildren(false);
-        setFocusable(true);
-        setFocusableInTouchMode(true);
-        setChildrenDrawingOrderEnabled(true);
-        setMotionEventSplittingEnabled(false);
+        super.setClipChildren(false);
+        super.setFocusable(true);
+        super.setFocusableInTouchMode(true);
+        super.setChildrenDrawingOrderEnabled(true);
+        super.setMotionEventSplittingEnabled(false);
 
         initBackgroundImageView(context);
         initEditText(context);
@@ -614,12 +614,7 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
                                   boolean isPureMove,
                                   float moveX, float moveY,
                                   float deltaX, float deltaY) {
-            mVector[0] = deltaX;
-            mVector[1] = deltaY;
-            stickerView.getMatrix()
-                    .mapVectors(mVector);
-            stickerView.setTranslationX(stickerView.getTranslationX() + mVector[0]);
-            stickerView.setTranslationY(stickerView.getTranslationY() + mVector[1]);
+            translate(stickerView, deltaX, deltaY);
 
             PointF relativeToParent = ViewUtils.getPointRelativeToParent(stickerView, moveX, moveY);
 

@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements
     private StoryPresenter<BitmapStory> mStoryPresenter;
 
     private StoryEditorView mStoryEditorView;
-    private InteractStickerListener mInteractStickerListener;
+    private InteractStickerListenerImpl mInteractStickerListener;
     private TextOnBackgroundStyleController mTextStyleController;
 
     private BackgroundsAdapter mBackgroundsAdapter;
@@ -220,10 +220,12 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onStop() {
-        super.onStop();
+        mInteractStickerListener.reset();
+
         mStoryPresenter.detachView();
         mStoryEditorView.removeInteractStickerListener(mInteractStickerListener);
         mStoryEditorView.removeBackgroundSetListener(mTextStyleController);
+        super.onStop();
     }
 
     @Override
@@ -316,6 +318,13 @@ public class MainActivity extends AppCompatActivity implements
             if (mActiveStickers.isEmpty()) {
                 mSaveButton.setEnabled(true);
             }
+        }
+
+        // Because of "Cancelling event due to no window focus:" when sticker is interacting
+        // and ACTION_CANCEL appears
+        void reset() {
+            mActiveStickers.clear();
+            mSaveButton.setEnabled(true);
         }
     }
 

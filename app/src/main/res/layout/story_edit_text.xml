@@ -14,4 +14,5 @@
     android:inputType="textNoSuggestions|textMultiLine|textCapSentences"
     android:gravity="center"
     app:background_side_padding="16dp"
-    app:background_corner_radius="4dp" />
+    app:background_corner_radius="8dp"
+    app:background_side_delta="12dp" />

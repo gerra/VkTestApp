@@ -34,10 +34,8 @@ import com.german.vktestapp.backgrounds.BackgroundsHelper;
 import com.german.vktestapp.backgrounds.SimpleBackground;
 import com.german.vktestapp.stickerpicker.StickerPickListener;
 import com.german.vktestapp.stickerpicker.StickerPickerDialogFragment;
-import com.german.vktestapp.textstyling.RoundedBackgroundSpan;
-import com.german.vktestapp.textstyling.ShadowTextStyle;
-import com.german.vktestapp.textstyling.SpanStyle;
-import com.german.vktestapp.textstyling.TextStyleController;
+import com.german.vktestapp.textstyling.Style;
+import com.german.vktestapp.textstyling.StyleableProvider;
 import com.german.vktestapp.utils.PermissionsUtils;
 import com.german.vktestapp.utils.Utils;
 import com.german.vktestapp.view.StickerView;
@@ -46,6 +44,7 @@ import com.german.vktestapp.view.story.StoryEditorView;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -65,7 +64,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private StoryEditorView mStoryEditorView;
     private InteractStickerListener mInteractStickerListener;
-    private TextStyleController mTextStyleController;
+    private TextOnBackgroundStyleController mTextStyleController;
 
     private BackgroundsAdapter mBackgroundsAdapter;
 
@@ -74,53 +73,13 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        BitmapStorySaver.FileSaveListener fileSaveListener;
-        File storiesDir;
-        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-            storiesDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "VkTestApp/Stories");
-            fileSaveListener = new UpdateGalleryNotifier(this);
-        } else {
-            File parent = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-            if (parent != null) {
-                storiesDir = new File(parent, "Stories");
-            } else {
-                storiesDir = new File(getFilesDir(), "VkTestApp/Stories");
-            }
-            fileSaveListener = null;
-        }
-
-        mStoryPresenter = new StoryPresenterImpl<>(new BitmapStorySaver(storiesDir, fileSaveListener), new Handler());
-
         mStoryEditorView = findViewById(R.id.story_editor_view);
         mStoryEditorView.setActivateRecycleBinEffect(new VibrateEffect());
 
-        Resources resources = getResources();
-
-        int shadowColor = resources.getColor(R.color.text_style_shadow);
-        float shadowRadius = resources.getDimension(R.dimen.text_style_shadow_radius);
-        float shadowDy = resources.getDimension(R.dimen.text_style_shadow_dy);
-
-        int backgroundRadius = resources.getDimensionPixelSize(R.dimen.text_style_background_radius);
-        float backgroundSidePadding = resources.getDimension(R.dimen.text_style_background_side_padding);
-
-        int secondStyleBGColor = resources.getColor(R.color.text_style_2_background_color);
-        int thirdStyleBGColor = resources.getColor(R.color.text_style_3_background_color);
-
-        int firstStyleTextColor = resources.getColor(R.color.text_style_1_text_color);
-
-        SpanStyle firstStyle = () -> new Object[] { new ShadowTextStyle(firstStyleTextColor, shadowRadius, shadowDy, shadowColor) };
-        SpanStyle secondStyle = () -> new Object[] {
-                new RoundedBackgroundSpan(backgroundSidePadding, secondStyleBGColor, backgroundRadius, shadowRadius, shadowDy, shadowColor)
-        };
-        SpanStyle thirdStyle = () -> new Object[] {
-                new ShadowTextStyle(firstStyleTextColor, shadowRadius, shadowDy, shadowColor),
-                new RoundedBackgroundSpan(backgroundSidePadding, thirdStyleBGColor, backgroundRadius, shadowRadius, shadowDy, shadowColor)
-        };
-
-        mTextStyleController = new TextStyleController(Arrays.asList(firstStyle, secondStyle, thirdStyle));
-
-        setActionBar();
-        setBackgroundsPanel(0);
+        initActionBar();
+        initTextStyleController(mStoryEditorView);
+        initBackgroundsPanel(0);
+        initStoryPresenter();
 
         View saveButton = findViewById(R.id.save_story);
         saveButton.setOnClickListener(v -> {
@@ -137,11 +96,10 @@ public class MainActivity extends AppCompatActivity implements
         super.onStart();
         mStoryPresenter.attachView(this);
         mStoryEditorView.addInteractStickerListener(mInteractStickerListener);
-        mTextStyleController.addEditTextProvider(mStoryEditorView);
         mStoryEditorView.addBackgroundSetListener(mTextStyleController);
     }
 
-    private void setActionBar() {
+    private void initActionBar() {
         getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
         getSupportActionBar().setDisplayShowCustomEnabled(true);
         getSupportActionBar().setCustomView(R.layout.action_bar);
@@ -154,7 +112,32 @@ public class MainActivity extends AppCompatActivity implements
                 .setOnClickListener(v -> mTextStyleController.toggle());
     }
 
-    private void setBackgroundsPanel(int selectedPosition) {
+    private void initTextStyleController(@NonNull StyleableProvider styleableProvider) {
+        Resources resources = getResources();
+
+        int shadowColor = resources.getColor(R.color.text_style_shadow);
+        float shadowRadius = resources.getDimension(R.dimen.text_style_shadow_radius);
+        float shadowDy = resources.getDimension(R.dimen.text_style_shadow_dy);
+
+        int secondBackgroundColor = resources.getColor(R.color.text_style_2_background_color);
+        int thirdBackgroundColor = resources.getColor(R.color.text_style_3_background_color);
+
+        int styledTextColor = resources.getColor(R.color.text_style_text_color);
+
+        Style.Shadow shadow = new Style.Shadow(shadowColor, shadowDy, shadowRadius);
+
+        Style firstStyle = new Style(new Style.TextStyle(styledTextColor, shadow),
+                                     new Style.BackgroundStyle(null, null));
+        Style secondStyle = new Style(new Style.TextStyle(null, null),
+                                      new Style.BackgroundStyle(secondBackgroundColor, shadow));
+        Style thirdStyle = new Style(new Style.TextStyle(styledTextColor, shadow),
+                                     new Style.BackgroundStyle(thirdBackgroundColor, shadow));
+
+        List<Style> styles = Arrays.asList(firstStyle, secondStyle, thirdStyle);
+        mTextStyleController = new TextOnBackgroundStyleController(styleableProvider, styles);
+    }
+
+    private void initBackgroundsPanel(int selectedPosition) {
         mBackgroundsAdapter = new BackgroundsAdapter(BackgroundsHelper.getDefaultBackgrounds(), this, this);
 
         RecyclerView backgroundsListView = findViewById(R.id.backgrounds_list);
@@ -162,6 +145,25 @@ public class MainActivity extends AppCompatActivity implements
         backgroundsListView.setAdapter(mBackgroundsAdapter);
         backgroundsListView.addItemDecoration(new BackgroundsItemDecoration(this));
         mBackgroundsAdapter.setSelectedPosition(selectedPosition);
+    }
+
+    private void initStoryPresenter() {
+        BitmapStorySaver.FileSaveListener fileSaveListener;
+        File storiesDir;
+        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            storiesDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "VkTestApp/Stories");
+            fileSaveListener = new UpdateGalleryNotifier(this);
+        } else {
+            File parent = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            if (parent != null) {
+                storiesDir = new File(parent, "Stories");
+            } else {
+                storiesDir = new File(getFilesDir(), "VkTestApp/Stories");
+            }
+            fileSaveListener = null;
+        }
+
+        mStoryPresenter = new StoryPresenterImpl<>(new BitmapStorySaver(storiesDir, fileSaveListener), new Handler());
     }
 
     @Override
@@ -221,7 +223,6 @@ public class MainActivity extends AppCompatActivity implements
         super.onStop();
         mStoryPresenter.detachView();
         mStoryEditorView.removeInteractStickerListener(mInteractStickerListener);
-        mTextStyleController.removeEditTextProvider(mStoryEditorView);
         mStoryEditorView.removeBackgroundSetListener(mTextStyleController);
     }
 

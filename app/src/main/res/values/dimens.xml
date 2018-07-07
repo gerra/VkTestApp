@@ -20,9 +20,6 @@
 
     <dimen name="action_bar_elevation">1dp</dimen>
 
-    <dimen name="text_style_shadow_radius">0.5dp</dimen>
-    <dimen name="text_style_shadow_dy">0.5dp</dimen>
-
-    <dimen name="text_style_background_radius">4dp</dimen>
-    <dimen name="text_style_background_side_padding">0dp</dimen>
+    <dimen name="text_style_shadow_radius">0dp</dimen>
+    <dimen name="text_style_shadow_dy">0dp</dimen>
 </resources>

@@ -3,7 +3,6 @@ package com.german.vktestapp.editor;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
@@ -28,7 +27,6 @@ import com.german.vktestapp.textstyling.Styleable;
 import com.german.vktestapp.textstyling.StyleableProvider;
 import com.german.vktestapp.utils.ViewOrderController;
 import com.german.vktestapp.utils.ViewUtils;
-import com.german.vktestapp.view.StaticDrawable;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -519,36 +517,7 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
     @MainThread
     @Nullable
     public Bitmap getBitmap() {
-        if (getMeasuredWidth() <= 0 || getMeasuredHeight() <= 0) {
-            return null;
-        }
-
-        int width = 1080;
-        float scale = 1f * width / getMeasuredWidth();
-
-        int height = (int) (width * (1f * getMeasuredHeight() / getMeasuredWidth()));
-
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        int initialCount = canvas.save();
-
-        canvas.scale(scale, scale);
-
-        int childCount = getChildCount();
-        for (int i = 0; i < childCount; i++) {
-            View child = getChildAt(getChildDrawingOrder(childCount, i));
-            if (child instanceof StaticDrawable) {
-                int sc = canvas.save();
-                canvas.translate(child.getLeft(), child.getTop());
-                canvas.concat(child.getMatrix());
-                ((StaticDrawable) child).drawStatic(canvas);
-                canvas.restoreToCount(sc);
-            }
-        }
-
-        canvas.restoreToCount(initialCount);
-
-        return bitmap;
+        return BitmapHelper.getBitmap(this);
     }
 
     @Nullable

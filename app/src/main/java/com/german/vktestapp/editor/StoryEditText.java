@@ -219,33 +219,45 @@ public class StoryEditText extends LoseFocusEditText
             return;
         }
 
-        int rTop;
-        int rBottom;
-        synchronized (RECT) {
-            if (!canvas.getClipBounds(RECT)) {
+        int saveCount = canvas.save();
+        try {
+            int boxHeight = getMeasuredHeight();
+            int textHeight = layout.getHeight();
+
+            if (textHeight < boxHeight) {
+                canvas.translate(0, (boxHeight - textHeight) / 2);
+            }
+
+            int rTop;
+            int rBottom;
+            synchronized (RECT) {
+                if (!canvas.getClipBounds(RECT)) {
+                    return;
+                }
+                rTop = RECT.top;
+                rBottom = RECT.bottom;
+            }
+
+            int lineCount = layout.getLineCount();
+
+            final int top = Math.max(0, rTop);
+            final int bottom = Math.min(layout.getLineTop(lineCount), rBottom);
+
+            if (top >= bottom) {
                 return;
             }
-            rTop = RECT.top;
-            rBottom = RECT.bottom;
+
+            final int lineFrom = layout.getLineForVertical(top);
+            final int lineTo = layout.getLineForVertical(bottom);
+
+            if (lineTo < 0) {
+                return;
+            }
+
+            drawBackground(canvas, layout, lineFrom, lineTo);
+        } finally {
+            canvas.restoreToCount(saveCount);
         }
-
-        int lineCount = layout.getLineCount();
-
-        final int top = Math.max(0, rTop);
-        final int bottom = Math.min(layout.getLineTop(lineCount), rBottom);
-
-        if (top >= bottom) {
-            return;
-        }
-
-        final int lineFrom = layout.getLineForVertical(top);
-        final int lineTo = layout.getLineForVertical(bottom);
-
-        if (lineTo < 0) {
-            return;
-        }
-
-        drawBackground(canvas, layout, lineFrom, lineTo);
     }
 
     private void drawBackground(@NonNull Canvas canvas,
@@ -355,7 +367,7 @@ public class StoryEditText extends LoseFocusEditText
             int left = (int) layout.getLineLeft(i) - mBackgroundSidePadding;
             int right = (int) layout.getLineRight(i) + mBackgroundSidePadding;
 
-            if (previousLeft != -1 && Math.abs(left - previousLeft) < mBackgroundSideDelta) {
+            if (i > lineFrom && Math.abs(left - previousLeft) < mBackgroundSideDelta) {
                 if (left < previousLeft) { // right > prevRight
                     int j = i - 1;
                     while (j >= lineFrom) {

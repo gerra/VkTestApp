@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="StoryEditText">
+        <attr name="background_side_padding" format="dimension"/>
+        <attr name="background_corner_radius" format="dimension"/>
+    </declare-styleable>
+</resources>

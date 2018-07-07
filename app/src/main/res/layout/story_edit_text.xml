@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.german.vktestapp.view.LoseFocusEditText xmlns:android="http://schemas.android.com/apk/res/android"
-    style="@style/StoryEditTextStyle"
+<com.german.vktestapp.view.story.StoryEditText
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:paddingLeft="@dimen/text_style_background_side_padding"
-    android:paddingRight="@dimen/text_style_background_side_padding" />
+    android:layout_marginRight="24dp"
+    android:layout_marginLeft="24dp"
+    android:textSize="32sp"
+    android:fontFamily="sans-serif-medium"
+    android:textColor="@color/text_style_text_color_0"
+    android:hint="@string/story_edit_text_hint"
+    android:background="@android:color/transparent"
+    android:inputType="textNoSuggestions|textMultiLine|textCapSentences"
+    android:gravity="center"
+    app:background_side_padding="16dp"
+    app:background_corner_radius="4dp" />

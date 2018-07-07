@@ -8,6 +8,8 @@ import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
@@ -38,6 +40,7 @@ import com.german.vktestapp.textstyling.Style;
 import com.german.vktestapp.textstyling.StyleableProvider;
 import com.german.vktestapp.utils.PermissionsUtils;
 import com.german.vktestapp.utils.Utils;
+import com.german.vktestapp.utils.ViewUtils;
 import com.german.vktestapp.view.StickerView;
 import com.german.vktestapp.view.story.StoryEditorView;
 
@@ -250,6 +253,7 @@ public class MainActivity extends AppCompatActivity implements
     public void hideProgress() {
     }
 
+    // TODO: wtf, google photos?
     private void onPhotoSelected(@NonNull Uri selectedUri) {
         String[] filePath = { MediaStore.Images.Media.DATA };
         Cursor cursor = getContentResolver()
@@ -265,13 +269,39 @@ public class MainActivity extends AppCompatActivity implements
             Utils.close(cursor);
         }
 
-        BitmapFactory.Options o = new BitmapFactory.Options();
-        o.inSampleSize = 4;
-        Bitmap bitmap = BitmapFactory.decodeFile(imagePath, o);
-        Background background = new SimpleBackground(new BitmapDrawable(getResources(), bitmap));
+        Background background = null;
+        if (imagePath != null) {
+            BitmapFactory.Options o = new BitmapFactory.Options();
+            Bitmap notResizedBitmap = BitmapFactory.decodeFile(imagePath, o);
+            if (notResizedBitmap != null) {
+                Bitmap actualBitmap;
+                int width = notResizedBitmap.getWidth();
+                int height = notResizedBitmap.getHeight();
+                Point screenSize = ViewUtils.getScreenSize(this);
+                if (width > screenSize.x || height > screenSize.y) {
+                    float scale = Math.min(1f * screenSize.x / width, 1f * screenSize.y / height);
+                    Matrix matrix = new Matrix();
+                    matrix.postScale(scale, scale);
+                    actualBitmap = Bitmap.createBitmap(notResizedBitmap,
+                                                       0, 0,
+                                                       width, height,
+                                                       matrix,
+                                                       false);
+                    notResizedBitmap.recycle();
+                } else {
+                    actualBitmap = notResizedBitmap;
+                }
+                background = new SimpleBackground(new BitmapDrawable(getResources(), actualBitmap));
+            }
+        }
+        if (background == null) {
+            background = Background.EMPTY;
+        }
         mStoryEditorView.setBackground(background);
         // onBackgroundPicked will be called
-        mBackgroundsAdapter.setSelectedPosition(BackgroundsAdapter.UNKNOWN_POSITION);
+        mBackgroundsAdapter.setSelectedPosition(!background.isEmpty()
+                                                        ? BackgroundsAdapter.UNKNOWN_POSITION
+                                                        : 0);
     }
 
     private void startImagePicker() {

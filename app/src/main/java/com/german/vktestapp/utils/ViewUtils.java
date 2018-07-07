@@ -1,6 +1,7 @@
 package com.german.vktestapp.utils;
 
 import android.content.Context;
+import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.support.annotation.NonNull;
@@ -11,6 +12,7 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
@@ -90,6 +92,14 @@ public class ViewUtils {
             v1 = VECTOR[1];
         }
         return new PointF(v0 + view.getLeft(), v1 + view.getTop());
+    }
+
+    @NonNull
+    public static Point getScreenSize(final Context context) {
+        final WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        final Point result = new Point();
+        wm.getDefaultDisplay().getSize(result);
+        return result;
     }
 
     @SuppressWarnings("WeakerAccess")

@@ -30,7 +30,7 @@ public class BackgroundsHelper {
     @NonNull
     public static List<BackgroundProvider> getDefaultBackgrounds() {
         List<BackgroundProvider> backgroundProviders = new ArrayList<>(GRADIENTS.length + 3);
-        backgroundProviders.add(() -> Background.NONE);
+        backgroundProviders.add(() -> Background.EMPTY);
         for (String[] gradient : GRADIENTS) {
             final int colorFrom = Color.parseColor(gradient[0]);
             final int colorTo = Color.parseColor(gradient[1]);

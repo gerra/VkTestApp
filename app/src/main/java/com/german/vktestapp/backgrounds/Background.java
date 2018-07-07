@@ -9,7 +9,7 @@ import android.support.annotation.Nullable;
 import com.german.vktestapp.R;
 
 public abstract class Background {
-    public static final Background NONE = new Background() {
+    public static final Background EMPTY = new Background() {
         @NonNull
         @Override
         public Drawable getThumb(@NonNull Context context) {
@@ -31,6 +31,6 @@ public abstract class Background {
     public abstract Drawable getFull(@NonNull Context context);
 
     public boolean isEmpty() {
-        return this == NONE;
+        return this == EMPTY;
     }
 }

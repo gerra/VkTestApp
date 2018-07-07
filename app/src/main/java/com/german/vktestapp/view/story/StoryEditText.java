@@ -28,6 +28,7 @@ public class StoryEditText extends LoseFocusEditText
         implements StaticDrawable, Styleable {
     private static final int DEFAULT_BACKGROUND_SIDE_PADDING = 0;
     private static final int DEFAULT_BACKGROUND_CORNER_RADIUS = 0;
+    private static final int DEFAULT_BACKGROUND_SIDE_DELTA = 0;
 
     private static final Rect RECT = new Rect();
 
@@ -41,14 +42,11 @@ public class StoryEditText extends LoseFocusEditText
     private final SparseIntArray mTops = new SparseIntArray(20);
     @NonNull
     private final SparseIntArray mBottoms = new SparseIntArray(20);
-
-    @NonNull
-    private final SparseIntArray mLineStarts = new SparseIntArray(20);
-    @NonNull
-    private final SparseIntArray mLineEnds = new SparseIntArray(20);
     /////////////////////////////////////////////////////////////////////////
 
     private int mBackgroundSidePadding;
+    private int mBackgroundSideDelta;
+
     @NonNull
     private final Path mTextBackgroundPath = new Path();
     @NonNull
@@ -91,6 +89,8 @@ public class StoryEditText extends LoseFocusEditText
         try {
             mBackgroundSidePadding = array.getDimensionPixelSize(R.styleable.StoryEditText_background_side_padding,
                                                                  DEFAULT_BACKGROUND_SIDE_PADDING);
+            mBackgroundSideDelta = array.getDimensionPixelSize(R.styleable.StoryEditText_background_side_delta,
+                                                               DEFAULT_BACKGROUND_SIDE_DELTA);
             backgroundCornerRadius = array.getDimension(R.styleable.StoryEditText_background_corner_radius,
                                                         DEFAULT_BACKGROUND_CORNER_RADIUS);
         } finally {
@@ -135,7 +135,7 @@ public class StoryEditText extends LoseFocusEditText
     protected void onDraw(Canvas canvas) {
         int backgroundColor = mTextBackgroundPaint.getColor();
         if (Color.alpha(backgroundColor) > 0) {
-            drawBackground(canvas, getLayout());
+            drawBackground(canvas, getLayout(), true);
         }
         super.onDraw(canvas);
     }
@@ -143,8 +143,13 @@ public class StoryEditText extends LoseFocusEditText
     @Override
     public void drawStatic(@NonNull Canvas canvas) {
         TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        textPaint.setColor(getCurrentTextColor());
         textPaint.setTypeface(getTypeface());
         textPaint.setTextSize(getTextSize());
+        textPaint.setShadowLayer(getShadowRadius(),
+                                 getShadowDx(),
+                                 getShadowDy(),
+                                 getShadowColor());
 
         Rect rect = new Rect();
         canvas.getClipBounds(rect);
@@ -158,143 +163,9 @@ public class StoryEditText extends LoseFocusEditText
                                                      getLineSpacingMultiplier(),
                                                      getLineSpacingExtra(),
                                                      getIncludeFontPadding());
-
-        drawBackground(canvas, staticLayout);
+        calculateHelperArrays(staticLayout, 0, staticLayout.getLineCount() - 1);
+        drawBackground(canvas, staticLayout, false);
         staticLayout.draw(canvas);
-    }
-
-    private void drawBackground(@NonNull Canvas canvas, @Nullable Layout layout) {
-        if (layout == null) {
-            return;
-        }
-
-        int rTop;
-        int rBottom;
-        synchronized (RECT) {
-            if (!canvas.getClipBounds(RECT)) {
-                return;
-            }
-            rTop = RECT.top;
-            rBottom = RECT.bottom;
-        }
-
-        int lineCount = layout.getLineCount();
-
-        final int top = Math.max(0, rTop);
-        final int bottom = Math.min(layout.getLineTop(lineCount), rBottom);
-
-        if (top >= bottom) {
-            return;
-        }
-
-        final int lineFrom = layout.getLineForVertical(top);
-        final int lineTo = layout.getLineForVertical(bottom);
-
-        if (lineTo < 0) {
-            return;
-        }
-
-        drawBackground(canvas, layout, lineFrom, lineTo);
-    }
-
-    private void drawBackground(@NonNull Canvas canvas, @NonNull Layout layout, int lineFrom, int lineTo) {
-        int previousEnd = layout.getLineStart(lineFrom);
-        int prevPartStart = lineFrom;
-        for (int i = lineFrom; i <= lineTo; i++) {
-            int start = previousEnd;
-            int end = layout.getLineStart(i + 1);
-            previousEnd = end;
-
-            mLineStarts.put(i - prevPartStart, start);
-            mLineEnds.put(i - prevPartStart, end);
-
-            int drawFrom = prevPartStart;
-            int drawTo = i - 1;
-            boolean drawBackground = false;
-            if (start == end - 1 && layout.getText().toString().charAt(start) == '\n') {
-                if (prevPartStart != i) {
-                    drawBackground = true;
-                }
-                prevPartStart = i + 1;
-            } else if (i == lineTo) {
-                drawBackground = true;
-                drawTo = lineTo;
-            }
-
-            if (drawBackground) {
-                calculatePath(layout, drawFrom, drawTo);
-                canvas.drawPath(mTextBackgroundPath, mTextBackgroundPaint);
-                mTextBackgroundPath.reset();
-            }
-        }
-    }
-
-    private void calculatePath(@NonNull Layout layout, int lineFrom, int lineTo) {
-        int previousBottom = layout.getLineTop(lineFrom);
-        for (int line = lineFrom; line <= lineTo; line++) {
-            int i = line - lineFrom;
-
-            int top = previousBottom;
-            int bottom = layout.getLineTop(line + 1);
-            previousBottom = bottom;
-
-            mLefts.put(i, (int) layout.getLineLeft(line) - mBackgroundSidePadding);
-            mTops.put(i, top);
-            mRights.put(i, (int) layout.getLineRight(line) + mBackgroundSidePadding);
-            mBottoms.put(i, bottom);
-
-//            if (line == lineTo) {
-//                Log.d("StoryEditText", (layout.getLineBaseline(line) - top)
-//                        + " " + (bottom - layout.getLineBaseline(line)));
-//            }
-        }
-
-        mTextBackgroundPath.reset();
-
-        // Right side
-        for (int line = lineFrom; line <= lineTo; line++) {
-            int i = line - lineFrom;
-
-            int start = mLineStarts.get(i);
-            int end = mLineEnds.get(i);
-
-            if (start == end) {
-                continue;
-            }
-
-            int right = mRights.get(i);
-            int top = mTops.get(i);
-            int bottom = mBottoms.get(i);
-
-            if (i == 0) {
-                mTextBackgroundPath.moveTo(right, top);
-            } else {
-                mTextBackgroundPath.lineTo(right, top);
-            }
-
-            mTextBackgroundPath.lineTo(right, bottom);
-        }
-
-        // Left side
-        for (int line = lineTo; line >= lineFrom; line--) {
-            int i = line - lineFrom;
-
-            int start = mLineStarts.get(i);
-            int end = mLineEnds.get(i);
-
-            if (start == end) {
-                continue;
-            }
-
-            int left = mLefts.get(i);
-            int top = mTops.get(i);
-            int bottom = mBottoms.get(i);
-
-            mTextBackgroundPath.lineTo(left, bottom);
-            mTextBackgroundPath.lineTo(left, top);
-        }
-
-        mTextBackgroundPath.close();
     }
 
     @Override
@@ -343,6 +214,187 @@ public class StoryEditText extends LoseFocusEditText
     @Override
     public void clearStyle() {
         setStyle(mDefaultStyle);
+    }
+
+    private void drawBackground(@NonNull Canvas canvas,
+                                @Nullable Layout layout,
+                                boolean calculateHelperArrays) {
+        if (layout == null) {
+            return;
+        }
+
+        int rTop;
+        int rBottom;
+        synchronized (RECT) {
+            if (!canvas.getClipBounds(RECT)) {
+                return;
+            }
+            rTop = RECT.top;
+            rBottom = RECT.bottom;
+        }
+
+        int lineCount = layout.getLineCount();
+
+        final int top = Math.max(0, rTop);
+        final int bottom = Math.min(layout.getLineTop(lineCount), rBottom);
+
+        if (top >= bottom) {
+            return;
+        }
+
+        final int lineFrom = layout.getLineForVertical(top);
+        final int lineTo = layout.getLineForVertical(bottom);
+
+        if (lineTo < 0) {
+            return;
+        }
+
+        drawBackground(canvas, layout, lineFrom, lineTo, calculateHelperArrays);
+    }
+
+    private void drawBackground(@NonNull Canvas canvas,
+                                @NonNull Layout layout,
+                                int lineFrom, int lineTo,
+                                boolean calculateHelperArrays) {
+        int previousEnd = layout.getLineStart(lineFrom);
+        int prevPartStart = lineFrom;
+        for (int i = lineFrom; i <= lineTo; i++) {
+            int start = previousEnd;
+            int end = layout.getLineStart(i + 1);
+            previousEnd = end;
+
+            int drawFrom = prevPartStart;
+            int drawTo = i - 1;
+            boolean drawBackground = false;
+            if (start == end - 1 && layout.getText().toString().charAt(start) == '\n') {
+                if (prevPartStart != i) {
+                    drawBackground = true;
+                }
+                prevPartStart = i + 1;
+            } else if (i == lineTo) {
+                drawBackground = true;
+                drawTo = lineTo;
+            }
+
+            if (drawBackground) {
+                calculatePath(layout, drawFrom, drawTo, calculateHelperArrays);
+                canvas.drawPath(mTextBackgroundPath, mTextBackgroundPaint);
+                mTextBackgroundPath.reset();
+            }
+        }
+    }
+
+    private void calculatePath(@NonNull Layout layout,
+                               int lineFrom, int lineTo,
+                               boolean calculateHelperArrays) {
+        if (calculateHelperArrays) {
+            calculateHelperArrays(layout, lineFrom, lineTo);
+        }
+
+        mTextBackgroundPath.reset();
+
+        // Right side
+        for (int i = lineFrom; i <= lineTo; i++) {
+            int start = layout.getLineStart(i);
+            int end = layout.getLineEnd(i);
+
+            if (start == end) {
+                continue;
+            }
+
+            int right = mRights.get(i);
+            int top = mTops.get(i);
+            int bottom = mBottoms.get(i);
+
+            if (i == lineFrom) {
+                mTextBackgroundPath.moveTo(right, top);
+            } else {
+                mTextBackgroundPath.lineTo(right, top);
+            }
+
+            mTextBackgroundPath.lineTo(right, bottom);
+        }
+
+        // Left side
+        for (int i = lineTo; i >= lineFrom; i--) {
+            int start = layout.getLineStart(i);
+            int end = layout.getLineEnd(i);
+
+            if (start == end) {
+                continue;
+            }
+
+            int left = mLefts.get(i);
+            int top = mTops.get(i);
+            int bottom = mBottoms.get(i);
+
+            mTextBackgroundPath.lineTo(left, bottom);
+            mTextBackgroundPath.lineTo(left, top);
+        }
+
+        mTextBackgroundPath.close();
+    }
+
+    private void calculateHelperArrays(@NonNull Layout layout, int lineFrom, int lineTo) {
+        if (lineTo < lineFrom) {
+            return;
+        }
+
+        int previousBottom = layout.getLineTop(lineFrom);
+        int previousWidth = -1;
+        int previousDescent = -1;
+
+        int previousLeft = mLefts.get(lineFrom - 1, -1);
+        int previousRight = mRights.get(lineFrom - 1, -1);
+        for (int i = lineFrom; i <= lineTo; i++) {
+            int descent = layout.getLineDescent(i);
+
+            int top = previousBottom;
+            int bottom = layout.getLineTop(i + 1) + descent;
+
+            int left = (int) layout.getLineLeft(i) - mBackgroundSidePadding;
+            int right = (int) layout.getLineRight(i) + mBackgroundSidePadding;
+
+            if (previousLeft != -1 && Math.abs(left - previousLeft) < mBackgroundSideDelta) {
+                if (left < previousLeft) { // right > prevRight
+                    int j = i - 1;
+                    while (j >= lineFrom) {
+                        int curLeft = mLefts.get(j);
+                        if (Math.abs(curLeft - left) < mBackgroundSideDelta) {
+                            left = Math.min(curLeft, left);
+                            right = Math.max(mRights.get(j), right);
+
+                            mLefts.put(j, left);
+                            mRights.put(j, right);
+                        } else {
+                            break;
+                        }
+                        j--;
+                    }
+                } else {
+                    left = previousLeft;
+                    right = previousRight;
+                }
+            }
+
+            int width = right - left;
+
+            if (i > lineFrom && width > previousWidth) {
+                top -= (int) (1.5f * previousDescent);
+                mBottoms.put(i - 1, top);
+            }
+
+            mLefts.put(i, left);
+            mTops.put(i, top);
+            mRights.put(i, right);
+            mBottoms.put(i, bottom);
+
+            previousBottom = bottom;
+            previousWidth = width;
+            previousDescent = descent;
+            previousLeft = left;
+            previousRight = right;
+        }
     }
 
     private static class CombinedOnFocusChangeListener implements OnFocusChangeListener {

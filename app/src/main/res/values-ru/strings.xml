@@ -4,6 +4,7 @@
     <string name="new_post_title">Новая запись</string>
     <string name="stickers_title">Стикеры</string>
     <string name="save_story">Сохранить</string>
+    <string name="story_edit_text_hint">Что у вас нового?</string>
     <string name="story_save_complete">История сохранена</string>
     <string name="story_save_error">Ошибка сохранения</string>
 </resources>

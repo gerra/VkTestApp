@@ -315,7 +315,11 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
         int measuredWidth = getMeasuredWidth();
         int measuredHeight = getMeasuredHeight();
 
-        if (mNeedRemeasure || measuredWidth <= 0 || measuredHeight <= 0) {
+        if (mNeedRemeasure
+                || measuredWidth <= 0
+                || measuredHeight <= 0
+                || mBackground == null
+                || mBackground.isEmpty()) {
             Drawable drawable = mBackgroundImageView.getDrawable();
             desiredWidth = drawable != null ? drawable.getIntrinsicWidth() : -1;
             desiredWidth = desiredWidth != -1 ? desiredWidth : parentWidth;

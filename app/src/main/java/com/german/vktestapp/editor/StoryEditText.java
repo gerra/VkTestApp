@@ -266,6 +266,9 @@ public class StoryEditText extends LoseFocusEditText
         int previousEnd = layout.getLineStart(lineFrom);
         int prevPartStart = lineFrom;
         int lastLine = layout.getLineCount() - 1;
+
+        calculatePath(layout, 0, lastLine);
+
         for (int i = 0; i <= lastLine; i++) {
             int start = previousEnd;
             int end = layout.getLineStart(i + 1);
@@ -287,7 +290,6 @@ public class StoryEditText extends LoseFocusEditText
             if (paragraphFound) {
                 if (wantFrom >= lineFrom && wantFrom <= lineTo
                         || wantTo >= lineFrom && wantTo <= lineTo) {
-                    calculatePath(layout, wantFrom, wantTo);
                     canvas.drawPath(mTextBackgroundPath, mTextBackgroundPaint);
                     mTextBackgroundPath.reset();
                 }

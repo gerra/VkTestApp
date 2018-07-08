@@ -6,17 +6,17 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 public class SimpleBackground extends Background {
-    @Nullable
+    @NonNull
     private final Drawable mDrawable;
 
-    public SimpleBackground(@Nullable Drawable drawable) {
+    public SimpleBackground(@NonNull Drawable drawable) {
         mDrawable = drawable;
     }
 
     @NonNull
     @Override
     public Drawable getThumb(@NonNull Context context) {
-        return mDrawable;
+        return mDrawable.mutate();
     }
 
     @Nullable
@@ -27,6 +27,6 @@ public class SimpleBackground extends Background {
 
     @Override
     public boolean isEmpty() {
-        return mDrawable == null;
+        return false;
     }
 }

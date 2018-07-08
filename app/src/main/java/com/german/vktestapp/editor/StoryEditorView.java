@@ -3,7 +3,6 @@ package com.german.vktestapp.editor;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
@@ -41,6 +40,8 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
 
     static final long LONG_CLICK_TIME = TimeUnit.MILLISECONDS.toMillis(500);
 
+    private boolean mNeedRemeasure = true;
+
     private Background mBackground;
     private ImageView mBackgroundImageView;
     private StoryEditText mEditText;
@@ -52,7 +53,6 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
     final Runnable mHideKeyboardRunnable = this::hideKeyboard;
 
     final ViewOrderController mViewOrderController = new ViewOrderController();
-    StickersController mStickersController;
 
     private final ActionListenerImpl mActionListener = new ActionListenerImpl();
 
@@ -129,13 +129,10 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
 
             mViewOrderController.moveToTop(stickerView);
 
-            if (mStickersController == null) {
-                mStickersController = new StickersController(this, mViewOrderController);
-            }
-            // This just added sticker, we need to save it sizes for change background in future
-            mStickersController.addSticker(stickerView,
-                                           getMeasuredWidth(),
-                                           getMeasuredHeight());
+            stickerView.setOnClickListener(v -> {
+                mViewOrderController.moveToTop(v);
+                invalidate();
+            });
             stickerView.setOnTouchListener(new StickerTouchListener(mActionListener));
 
             hideKeyboard();
@@ -174,6 +171,8 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
     @Override
     public void setBackground(@Nullable Drawable drawable) {
         mBackgroundImageView.setImageDrawable(drawable);
+        mNeedRemeasure = true;
+        requestLayout();
     }
 
     public void setBackground(@NonNull Background background) {
@@ -216,19 +215,21 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        Point backgroundSize = measureBackground(widthMeasureSpec, heightMeasureSpec);
-        int backgroundWidth = backgroundSize.x;
-        int backgroundHeight = backgroundSize.y;
+        BackgroundInfo backgroundInfo = measureBackground(widthMeasureSpec, heightMeasureSpec);
+        int backgroundWidth = backgroundInfo.width;
+        int backgroundHeight = backgroundInfo.height;
 
         // Pass to children measured sizes of this view
         int newWidthMeasureSpec = MeasureSpec.makeMeasureSpec(backgroundWidth, MeasureSpec.AT_MOST);
         int newHeightMeasureSpec = MeasureSpec.makeMeasureSpec(backgroundHeight, MeasureSpec.AT_MOST);
 
-        measureChildWithMargins(mEditText, newWidthMeasureSpec, 0, newHeightMeasureSpec, 0);
-        measureStickers(backgroundWidth, backgroundHeight);
-        measureChild(mRecyclerBinView, newWidthMeasureSpec, newHeightMeasureSpec);
+        measureEditText(backgroundInfo);
+        measureStickers(backgroundInfo);
+        measureChildWithMargins(mRecyclerBinView, newWidthMeasureSpec, 0, newHeightMeasureSpec, 0);
 
         setMeasuredDimension(backgroundWidth, backgroundHeight);
+
+        mNeedRemeasure = false;
     }
 
     @Override
@@ -295,9 +296,6 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
     @Override
     public void onViewRemoved(View child) {
         super.onViewRemoved(child);
-        if (child instanceof StickerView) {
-            mStickersController.removeSticker((StickerView) child);
-        }
         if (child == mRecyclerBinView) {
             removeBackgroundSetListener(mRecyclerBinView);
         }
@@ -305,38 +303,61 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
     }
 
     @NonNull
-    private Point measureBackground(int widthMeasureSpec, int heightMeasureSpec) {
-        int width = MeasureSpec.getSize(widthMeasureSpec);
-        int height = MeasureSpec.getSize(heightMeasureSpec);
+    private BackgroundInfo measureBackground(int widthMeasureSpec, int heightMeasureSpec) {
+        // Ignore modes, our StoryEditorView should be in the FrameLayout with match parent sizes
 
-        int backgroundWidth;
-        int backgroundHeight;
+        int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
+        int parentHeight = MeasureSpec.getSize(heightMeasureSpec);
 
-        measureChild(mBackgroundImageView, widthMeasureSpec, heightMeasureSpec);
-        Drawable drawable = mBackgroundImageView.getDrawable();
-        if (drawable != null) {
-            int drawableWidth = drawable.getIntrinsicWidth();
-            drawableWidth = drawableWidth != -1 ? drawableWidth : width;
+        int desiredWidth;
+        int desiredHeight;
 
-            int drawableHeight = drawable.getIntrinsicHeight();
-            drawableHeight = drawableHeight != -1 ? drawableHeight : height;
+        int measuredWidth = getMeasuredWidth();
+        int measuredHeight = getMeasuredHeight();
 
-            float widthCoef = 1.0f * width / drawableWidth;
-            float heightCoef = 1.0f * height / drawableHeight;
+        if (mNeedRemeasure || measuredWidth <= 0 || measuredHeight <= 0) {
+            Drawable drawable = mBackgroundImageView.getDrawable();
+            desiredWidth = drawable != null ? drawable.getIntrinsicWidth() : -1;
+            desiredWidth = desiredWidth != -1 ? desiredWidth : parentWidth;
 
-            float coef = Math.min(widthCoef, heightCoef);
-
-            backgroundWidth = Math.round(drawableWidth * coef);
-            backgroundHeight = Math.round(drawableHeight * coef);
+            desiredHeight = drawable != null ? drawable.getIntrinsicHeight() : -1;
+            desiredHeight = desiredHeight != -1 ? desiredHeight : parentHeight;
         } else {
-            backgroundWidth = width;
-            backgroundHeight = height;
+            desiredWidth = measuredWidth;
+            desiredHeight = measuredHeight;
         }
 
-        return new Point(backgroundWidth, backgroundHeight);
+        float widthCoef = 1.0f * parentWidth / desiredWidth;
+        float heightCoef = 1.0f * parentHeight / desiredHeight;
+
+        float coef = Math.min(widthCoef, heightCoef);
+
+        float backgroundWidthF = desiredWidth * coef;
+        float backgroundHeightF = desiredHeight * coef;
+
+        int backgroundWidth = Math.round(backgroundWidthF);
+        int backgroundHeight = Math.round(backgroundHeightF);
+
+        mBackgroundImageView.measure(MeasureSpec.makeMeasureSpec(backgroundWidth, MeasureSpec.EXACTLY),
+                                     MeasureSpec.makeMeasureSpec(backgroundHeight, MeasureSpec.EXACTLY));
+
+        float changeWidthRatio = measuredWidth > 0 ? measuredWidth / backgroundWidthF : 1f;
+        float changeHeightRatio = measuredHeight > 0 ? measuredHeight / backgroundHeightF : 1f;
+        return new BackgroundInfo(backgroundWidth,
+                                  backgroundHeight,
+                                  changeWidthRatio,
+                                  changeHeightRatio);
     }
 
-    private void measureStickers(int width, int height) {
+    private void measureEditText(@NonNull BackgroundInfo backgroundInfo) {
+        measureChildWithMargins(mEditText,
+                                MeasureSpec.makeMeasureSpec(backgroundInfo.width, MeasureSpec.AT_MOST),
+                                0,
+                                MeasureSpec.makeMeasureSpec(backgroundInfo.height, MeasureSpec.AT_MOST),
+                                0);
+    }
+
+    private void measureStickers(@NonNull BackgroundInfo backgroundInfo) {
         int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             View child = getChildAt(i);
@@ -344,59 +365,30 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
                 continue;
             }
 
-            StickerView stickerView = (StickerView) child;
+            measureSticker((StickerView) child, backgroundInfo);
+        }
+    }
 
-            boolean wasMeasured = stickerView.getMeasuredHeight() != 0
-                    && stickerView.getMeasuredWidth() != 0;
-            if (!wasMeasured) {
-                // At first check what size sticker wants to be
-                measureChild(stickerView,
-                             MeasureSpec.makeMeasureSpec(width, MeasureSpec.UNSPECIFIED),
-                             MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
-                // TODO:
-                // And now check that any its dimension is not greater than 1/5 of corresponding
-                // parent dimension
-//                int stickerWidth = stickerView.getMeasuredWidth();
-//                int stickerHeight = stickerView.getMeasuredHeight();
-//                float widthRatio = 1f * stickerWidth / width;
-//                float heightRatio = 1f * stickerHeight / height;
-//                if (widthRatio > MAX_STICKER_DIMENSION_RATIO || heightRatio > MAX_STICKER_DIMENSION_RATIO) {
-//                    
-//                }
-            } else {
-                StickerInfo info = mStickersController.getStickerInfo(stickerView);
-                if (info != null) {
-                    float initialBackgroundWidth = info.getHolderBackgroundWidth();
-                    float initialBackgroundHeight = info.getHolderBackgroundHeight();
+    private void measureSticker(@NonNull StickerView stickerView,
+                                @NonNull BackgroundInfo backgroundInfo) {
+        int measuredWidth = stickerView.getMeasuredWidth();
+        int measuredHeight = stickerView.getMeasuredHeight();
 
-                    float prevSelfRatioX = info.getSelfRatioX();
-                    float prevSelfRatioY = info.getSelfRatioY();
-
-                    float scaleFactor = getScaleFactor(info, stickerView.getScaleX());
-
-                    float selfRatioX = width / initialBackgroundWidth;
-                    float selfRatioY = height / initialBackgroundHeight;
-                    float selfRatio = Math.min(selfRatioX, selfRatioY);
-                    info.setSelfRatios(selfRatioX, selfRatioY);
-
-                    stickerView.setScaleX(scaleFactor * selfRatio);
-                    stickerView.setScaleY(scaleFactor * selfRatio);
-
-                    float prevBackgroundWidth = prevSelfRatioX * initialBackgroundWidth;
-                    float prevBackgroundHeight = prevSelfRatioY * initialBackgroundHeight;
-
-                    float translationXRatio = width / prevBackgroundWidth;
-                    float translationYRatio = height / prevBackgroundHeight;
-
-                    stickerView.setTranslationX(translationXRatio * stickerView.getTranslationX());
-                    stickerView.setTranslationY(translationYRatio * stickerView.getTranslationY());
-
-                    stickerView.setPivotX(translationXRatio * stickerView.getPivotX());
-                    stickerView.setPivotY(translationYRatio * stickerView.getPivotY());
-                } else {
-                    Log.w(TAG, "wtf? There is no StickerView in controller?");
-                }
-            }
+        if (measuredWidth <= 0 || measuredHeight <= 0) {
+            // Sticker is just added
+            // Check what size is interested for it
+            stickerView.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
+                                MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        } else if (Math.abs(backgroundInfo.widthRatio - backgroundInfo.heightRatio) <= 0.00001) {
+            float ratio = Math.max(backgroundInfo.widthRatio, backgroundInfo.heightRatio);
+            int newWidth = (int) (measuredWidth / ratio);
+            int newHeight = (int) (measuredHeight / ratio);
+            stickerView.setTranslationX(stickerView.getTranslationX() / ratio);
+            stickerView.setTranslationY(stickerView.getTranslationY() / ratio);
+            stickerView.setPivotX(stickerView.getPivotX() / ratio);
+            stickerView.setPivotY(stickerView.getPivotY() / ratio);
+            stickerView.measure(MeasureSpec.makeMeasureSpec(newWidth, MeasureSpec.EXACTLY),
+                                MeasureSpec.makeMeasureSpec(newHeight, MeasureSpec.EXACTLY));
         }
     }
 
@@ -446,12 +438,6 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
                                int parentTop,
                                int parentRight,
                                int parentBottom) {
-        StickerInfo info = mStickersController.getStickerInfo(stickerView);
-        if (info == null) {
-            Log.w(TAG, "wtf? StickerView is\'nt in StickersController?");
-            return;
-        }
-
         // Initial sticker center is in the center of parent,
         // for positioning translation is used.
         float stickerCenterX = (parentRight + parentLeft) * 0.5f;
@@ -524,14 +510,6 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
     @Override
     public Styleable getStyleable() {
         return mEditText;
-    }
-
-    float getScaleFactor(@NonNull StickerInfo info, float totalScale) {
-        float prevSelfRatioX = info.getSelfRatioX();
-        float prevSelfRatioY = info.getSelfRatioY();
-        float prevSelfRatio = Math.min(prevSelfRatioX, prevSelfRatioY);
-
-        return totalScale / prevSelfRatio;
     }
 
     private class ActionListenerImpl implements StickerTouchListener.ActionListener {
@@ -638,19 +616,13 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
         public void onStickerScaleAndRotate(@NonNull StickerView stickerView,
                                             float scaleFactor, float degrees,
                                             float deltaFocusX, float deltaFocusY) {
-            float oldScaleFactor = 1;
-            StickerInfo info = mStickersController.getStickerInfo(stickerView);
-            if (info != null) {
-                oldScaleFactor = getScaleFactor(info, stickerView.getScaleX());
-            } else {
-                Log.w(TAG, "wtf? sticker is null...");
-            }
-
+            float oldScaleFactor = stickerView.getScaleX();
             if (oldScaleFactor * scaleFactor < 10f) {
                 stickerView.setScaleX(stickerView.getScaleX() * scaleFactor);
                 stickerView.setScaleY(stickerView.getScaleY() * scaleFactor);
-                translate(stickerView, deltaFocusX, deltaFocusY);
             }
+
+            translate(stickerView, deltaFocusX, deltaFocusY);
 
             float newDegrees = stickerView.getRotation() + degrees;
             if (newDegrees < 180) {
@@ -712,6 +684,20 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
 
         public boolean isActive() {
             return mIsActive;
+        }
+    }
+
+    private static class BackgroundInfo {
+        final int width;
+        final int height;
+        final float widthRatio;
+        final float heightRatio;
+
+        BackgroundInfo(int width, int height, float widthRatio, float heightRatio) {
+            this.width = width;
+            this.height = height;
+            this.widthRatio = widthRatio;
+            this.heightRatio = heightRatio;
         }
     }
 }

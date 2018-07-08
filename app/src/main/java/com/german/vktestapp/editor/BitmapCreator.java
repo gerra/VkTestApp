@@ -43,7 +43,8 @@ public class BitmapCreator {
             View child = storyEditorView.getChildAt(drawingOrder);
             if (child instanceof StaticDrawable) {
                 int sc = canvas.save();
-                canvas.translate(child.getLeft(), child.getTop());
+                canvas.translate(child.getLeft() - child.getScrollX(),
+                                 child.getTop() - child.getScrollY());
                 canvas.concat(child.getMatrix());
                 ((StaticDrawable) child).drawStatic(canvas);
                 canvas.restoreToCount(sc);

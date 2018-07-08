@@ -152,9 +152,6 @@ public class StoryEditText extends LoseFocusEditText
                                  getShadowDy(),
                                  getShadowColor());
 
-        Rect rect = new Rect();
-        canvas.getClipBounds(rect);
-
         StaticLayout staticLayout = new StaticLayout(getText().toString(),
                                                      0,
                                                      length(),

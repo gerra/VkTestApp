@@ -38,6 +38,7 @@ import com.german.vktestapp.textstyling.Style;
 import com.german.vktestapp.textstyling.StyleableProvider;
 import com.german.vktestapp.utils.BitmapHelper;
 import com.german.vktestapp.utils.PermissionsUtils;
+import com.german.vktestapp.utils.ViewUtils;
 
 import java.io.File;
 import java.util.Arrays;
@@ -53,8 +54,8 @@ public class MainActivity extends AppCompatActivity implements
     private static final String PERMISSION_READ_STORAGE = Manifest.permission.READ_EXTERNAL_STORAGE;
     private static final String PERMISSION_WRITE_STORAGE = Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
-    private static final int REQUEST_CODE_READ_PERMISSION = 50;
-    private static final int REQUEST_CODE_WRITE_PERMISSION = 51;
+    private static final int REQUEST_CODE_READ_PERMISSION_FOR_IMAGE_PICKER = 50;
+    private static final int REQUEST_CODE_WRITE_PERMISSION_FOR_STORY_SAVE = 51;
 
     private static final int REQUEST_CODE_SELECT_PHOTO = 100;
 
@@ -83,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements
         saveButton.setOnClickListener(v -> {
             PermissionsUtils.checkAndRequestPermission(this,
                                                        PERMISSION_WRITE_STORAGE,
-                                                       REQUEST_CODE_WRITE_PERMISSION,
+                                                       REQUEST_CODE_WRITE_PERMISSION_FOR_STORY_SAVE,
                                                        this::saveStory);
         });
         mInteractStickerListener = new InteractStickerListenerImpl(saveButton);
@@ -105,7 +106,10 @@ public class MainActivity extends AppCompatActivity implements
         View actionBarView = getSupportActionBar().getCustomView();
         ((Toolbar) actionBarView.getParent()).setContentInsetsAbsolute(0, 0);
         actionBarView.findViewById(R.id.show_sticker_picker)
-                .setOnClickListener(v -> new StickerPickerDialogFragment().show(getSupportFragmentManager(), null));
+                .setOnClickListener(v -> {
+                    ViewUtils.hideKeyboard(v);
+                    new StickerPickerDialogFragment().show(getSupportFragmentManager(), null);
+                });
         actionBarView.findViewById(R.id.change_text_style)
                 .setOnClickListener(v -> mTextStyleController.toggle());
     }
@@ -178,20 +182,20 @@ public class MainActivity extends AppCompatActivity implements
     public void onAddBackgroundClick() {
         PermissionsUtils.checkAndRequestPermission(this,
                                                    PERMISSION_READ_STORAGE,
-                                                   REQUEST_CODE_READ_PERMISSION,
+                                                   REQUEST_CODE_READ_PERMISSION_FOR_IMAGE_PICKER,
                                                    this::startImagePicker);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
-            case REQUEST_CODE_READ_PERMISSION: {
+            case REQUEST_CODE_READ_PERMISSION_FOR_IMAGE_PICKER: {
                 if (grantResults.length > 0 && PackageManager.PERMISSION_GRANTED == grantResults[0]) {
                     startImagePicker();
                 }
                 break;
             }
-            case REQUEST_CODE_WRITE_PERMISSION: {
+            case REQUEST_CODE_WRITE_PERMISSION_FOR_STORY_SAVE: {
                 if (grantResults.length > 0 && PackageManager.PERMISSION_GRANTED == grantResults[0]) {
                     saveStory();
                 }
@@ -228,7 +232,6 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void showProgress() {
-
     }
 
     @Override
@@ -241,6 +244,9 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onSaveError() {
+        if (Looper.myLooper() == null) {
+            Looper.prepare();
+        }
         Toast.makeText(this, R.string.story_save_error, Toast.LENGTH_LONG).show();
     }
 

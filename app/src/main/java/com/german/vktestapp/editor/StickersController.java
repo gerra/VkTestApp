@@ -17,7 +17,7 @@ public class StickersController {
     @NonNull
     private final ViewOrderController mViewOrderController;
 
-    private final WeakHashMap<StickerView, StickerInfo> mCoordinates = new WeakHashMap<>(50);
+    private final WeakHashMap<StickerView, StickerInfo> mInfos = new WeakHashMap<>(50);
 
     public StickersController(@NonNull View parent,
                               @NonNull ViewOrderController viewOrderController) {
@@ -31,24 +31,24 @@ public class StickersController {
                                   int holderHeight) {
         StickerInfo stickerInfo = new StickerInfo();
         stickerInfo.setHolderBackgroundSizes(holderWidth, holderHeight);
-        mCoordinates.put(stickerView, stickerInfo);
+        mInfos.put(stickerView, stickerInfo);
         stickerView.setOnClickListener(this::moveToTop);
 
         return stickerInfo;
     }
 
     public void removeSticker(@NonNull StickerView stickerView) {
-        mCoordinates.remove(stickerView);
+        mInfos.remove(stickerView);
     }
 
     @Nullable
     public StickerInfo getStickerInfo(@NonNull StickerView stickerView) {
-        return mCoordinates.get(stickerView);
+        return mInfos.get(stickerView);
     }
 
     @NonNull
     public Collection<StickerView> getAllStickers() {
-        return mCoordinates.keySet();
+        return mInfos.keySet();
     }
 
     private void moveToTop(@NonNull View view) {

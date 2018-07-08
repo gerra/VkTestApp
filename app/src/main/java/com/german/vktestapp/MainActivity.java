@@ -5,11 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
-import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
@@ -17,7 +13,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.ActionBar;
@@ -41,9 +36,8 @@ import com.german.vktestapp.stickerpicker.StickerPickListener;
 import com.german.vktestapp.stickerpicker.StickerPickerDialogFragment;
 import com.german.vktestapp.textstyling.Style;
 import com.german.vktestapp.textstyling.StyleableProvider;
+import com.german.vktestapp.utils.BitmapHelper;
 import com.german.vktestapp.utils.PermissionsUtils;
-import com.german.vktestapp.utils.Utils;
-import com.german.vktestapp.utils.ViewUtils;
 
 import java.io.File;
 import java.util.Arrays;
@@ -254,48 +248,12 @@ public class MainActivity extends AppCompatActivity implements
     public void hideProgress() {
     }
 
-    // TODO: wtf, google photos?
     private void onPhotoSelected(@NonNull Uri selectedUri) {
-        String[] filePath = { MediaStore.Images.Media.DATA };
-        Cursor cursor = getContentResolver()
-                .query(selectedUri, filePath, null, null, null);
-        if (cursor == null) {
-            return;
-        }
-        String imagePath;
-        try {
-            cursor.moveToFirst();
-            imagePath = cursor.getString(cursor.getColumnIndex(filePath[0]));
-        } finally {
-            Utils.close(cursor);
-        }
-
-        Background background = null;
-        if (imagePath != null) {
-            BitmapFactory.Options o = new BitmapFactory.Options();
-            Bitmap notResizedBitmap = BitmapFactory.decodeFile(imagePath, o);
-            if (notResizedBitmap != null) {
-                Bitmap actualBitmap;
-                int width = notResizedBitmap.getWidth();
-                int height = notResizedBitmap.getHeight();
-                Point screenSize = ViewUtils.getScreenSize(this);
-                if (width > screenSize.x || height > screenSize.y) {
-                    float scale = Math.min(1f * screenSize.x / width, 1f * screenSize.y / height);
-                    Matrix matrix = new Matrix();
-                    matrix.postScale(scale, scale);
-                    actualBitmap = Bitmap.createBitmap(notResizedBitmap,
-                                                       0, 0,
-                                                       width, height,
-                                                       matrix,
-                                                       false);
-                    notResizedBitmap.recycle();
-                } else {
-                    actualBitmap = notResizedBitmap;
-                }
-                background = new SimpleBackground(new BitmapDrawable(getResources(), actualBitmap));
-            }
-        }
-        if (background == null) {
+        Bitmap photoBitmap = BitmapHelper.createFromUri(this, selectedUri);
+        Background background;
+        if (photoBitmap != null) {
+            background = new SimpleBackground(new BitmapDrawable(getResources(), photoBitmap));
+        } else {
             background = Background.EMPTY;
         }
         mStoryEditorView.setBackground(background);

@@ -9,16 +9,16 @@ import android.view.View;
 
 import com.german.vktestapp.view.StaticDrawable;
 
-public class BitmapHelper {
-    private static final int DEFAULT_WIDTH = 1080;
+public class BitmapCreator {
+    private static final int DEFAULT_WIDTH = 1440;
 
-    private BitmapHelper() {
+    private BitmapCreator() {
         // no instance
     }
 
     @Nullable
     @MainThread
-    public static Bitmap getBitmap(@NonNull StoryEditorView storyEditorView) {
+    public static Bitmap createBitmap(@NonNull StoryEditorView storyEditorView) {
         int measuredWidth = storyEditorView.getMeasuredWidth();
         int measuredHeight = storyEditorView.getMeasuredHeight();
 

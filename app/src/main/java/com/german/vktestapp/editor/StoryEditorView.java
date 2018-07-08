@@ -454,8 +454,8 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
 
         // Initial sticker center is in the center of parent,
         // for positioning translation is used.
-        float stickerCenterX = (parentRight - parentLeft) * 0.5f;
-        float stickerCenterY = (parentBottom - parentTop) * 0.5f;
+        float stickerCenterX = (parentRight + parentLeft) * 0.5f;
+        float stickerCenterY = (parentBottom + parentTop) * 0.5f;
 
         int stickerWidth = stickerView.getMeasuredWidth();
         int stickerHeight = stickerView.getMeasuredHeight();
@@ -517,7 +517,7 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
     @MainThread
     @Nullable
     public Bitmap getBitmap() {
-        return BitmapHelper.getBitmap(this);
+        return BitmapCreator.createBitmap(this);
     }
 
     @Nullable
@@ -526,7 +526,7 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
         return mEditText;
     }
 
-    private float getScaleFactor(@NonNull StickerInfo info, float totalScale) {
+    float getScaleFactor(@NonNull StickerInfo info, float totalScale) {
         float prevSelfRatioX = info.getSelfRatioX();
         float prevSelfRatioY = info.getSelfRatioY();
         float prevSelfRatio = Math.min(prevSelfRatioX, prevSelfRatioY);
@@ -638,10 +638,19 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
         public void onStickerScaleAndRotate(@NonNull StickerView stickerView,
                                             float scaleFactor, float degrees,
                                             float deltaFocusX, float deltaFocusY) {
-            translate(stickerView, deltaFocusX, deltaFocusY);
+            float oldScaleFactor = 1;
+            StickerInfo info = mStickersController.getStickerInfo(stickerView);
+            if (info != null) {
+                oldScaleFactor = getScaleFactor(info, stickerView.getScaleX());
+            } else {
+                Log.w(TAG, "wtf? sticker is null...");
+            }
 
-            stickerView.setScaleX(stickerView.getScaleX() * scaleFactor);
-            stickerView.setScaleY(stickerView.getScaleY() * scaleFactor);
+            if (oldScaleFactor * scaleFactor < 10f) {
+                stickerView.setScaleX(stickerView.getScaleX() * scaleFactor);
+                stickerView.setScaleY(stickerView.getScaleY() * scaleFactor);
+                translate(stickerView, deltaFocusX, deltaFocusY);
+            }
 
             float newDegrees = stickerView.getRotation() + degrees;
             if (newDegrees < 180) {
@@ -673,11 +682,12 @@ public class StoryEditorView extends ViewGroup implements StyleableProvider {
     }
 
     private static class RecycleBinState {
+        @NonNull
         final RecyclerBinView mRecyclerBinView;
 
         private boolean mIsActive;
 
-        public RecycleBinState(RecyclerBinView recyclerBinView) {
+        public RecycleBinState(@NonNull RecyclerBinView recyclerBinView) {
             mRecyclerBinView = recyclerBinView;
         }
 

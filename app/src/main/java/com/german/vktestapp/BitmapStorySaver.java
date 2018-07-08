@@ -23,29 +23,36 @@ public class BitmapStorySaver implements StorySaver<BitmapStory> {
     @NonNull
     @Override
     public StorySaveResult save(@NonNull BitmapStory story) {
-        if (!createDirectory(mStoriesFolder)) {
-            return StorySaveResult.FAIL;
-        }
+        Bitmap bitmap = story.getBitmap();
 
-        File file = new File(mStoriesFolder, story.getName() + ".png");
-        try (OutputStream os = new FileOutputStream(file)) {
-            Bitmap bitmap = story.getBitmap();
-            if (bitmap != null) {
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, os);
-                os.flush();
-            } else {
-                file.delete();
+        try {
+            if (!createDirectory(mStoriesFolder)) {
+                return StorySaveResult.FAIL;
             }
-        } catch (IOException e) {
-            file.delete();
-            return StorySaveResult.FAIL;
-        }
 
-        if (mFileSaveListener != null) {
-            mFileSaveListener.onSave(file);
-        }
+            File file = new File(mStoriesFolder, story.getName() + ".png");
+            try (OutputStream os = new FileOutputStream(file)) {
+                if (bitmap != null) {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, os);
+                    os.flush();
+                } else {
+                    file.delete();
+                }
+            } catch (IOException e) {
+                file.delete();
+                return StorySaveResult.FAIL;
+            }
 
-        return StorySaveResult.SUCCESS;
+            if (mFileSaveListener != null) {
+                mFileSaveListener.onSave(file);
+            }
+
+            return StorySaveResult.SUCCESS;
+        } finally {
+            if (bitmap != null) {
+                bitmap.recycle();
+            }
+        }
     }
 
     private boolean createDirectory(@NonNull File file) {
